@@ -1,33 +1,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include "preprocess.h"
 
-void read_file_and_insert_to_hash_table(const char *filename){
-    FILE *file;
-    int num;
-    file = fopen(filename, "r");
+bool is_it_a_macro_statement_line(char *line){
+    /*TODO: see edge cases for macr string*/
+    const char *macro_call = "macr ";
+    char *position = strstr(line, macro_call);
+    if(position != NULL){
+        return true;
+    }
+    return false;
+}
+
+int parse_file_with_macros(const char *filename){
+    FILE *file = fopen(filename, "r");
+    line_macro_state line_state;
+    char line[MAX_LEN_LINE_ASSEMBLY_FILE];
+
+
     if(file == NULL){
         /*Error opening file*/
         perror("Error: ");
-        exit(1);
+        return 1;
     }
-    while(fscanf(file, "%d", &num) == 1){
-        if(num >= 0 && num <= 28){
-            insert_to_hash_table(num, filename);
+
+    line_state = OTHER;
+    while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, file) != NULL){
+        switch (line_state){
+            case OTHER:
+                if (is_it_a_macro_statement_line(line)){
+                    line_state = INSIDE_MACRO;
+                }
+                break;
+            case INSIDE_MACRO:
+                printf("%s", line);
+                line_state = END_MACRO;
+                break;
+            case END_MACRO:
+                printf("%s", line);
+                line_state = OTHER;
+                break;
+            case CALLED_MACRO:
+                break;
+            default:
+                break;
+            /*case
+            default:
+                printf("error in cases");
+                break;*/
         }
-        else{
-            printf("Error:\tin %s:\t%d is not in the range between 0 to %d.\n", filename, num, HASH_TABLE_CAPACITY - 1);
-        }
     }
-    if(ferror(file)){
-        printf("no numbers in file:\t%s", filename);
-    }
+    
     fclose(file);
+    return 0;
 }
 
-
-
-int main(int argc, char *argv[]){
-    create_new_files_with_macros_inserted(argc, argv);
-    return 0;
+int preprocess_macro(const char *input_file_name){
+    int ans = 0;
+    ans = parse_file_with_macros(input_file_name);
+    return ans;
 }
