@@ -21,41 +21,44 @@ bool is_it_a_macro_statement_line(char *line){
     return false;
 }
 
+int check_how_many_elements_in_line(char *line){
+    int c = 0;
+    char* token_ptr = strtok(line, " \t");
+    while (token_ptr)
+    {
+        c++;
+        token_ptr = strtok(NULL, " \t");
+    }
+    
+    return c;
+}
+
 
 char* find_macro_name(char* line){
-/*     char token[MAX_LEN_MACRO_NAME];
- */    char* token_ptr = strtok(line, " \t");
-    char macr_statement[MAX_LEN_MACRO_NAME];
-    strncpy(token_ptr, macr_statement, 4);
-    printf("%s", macr_statement);
+    char* macr_name_ptr = strtok(line, " \t");
+    char* macro_name = (char*)malloc(MAX_LEN_MACRO_NAME*sizeof(char));
 
-/*     char* macro_name;
- */    /*TODO!! what will happend in this function. maybe problem with \n
-    and the next strings in file.!!!*/
-
-    /*The first word in the line: macr statement*/
-    /* if (strcmp(token, macr_statement)){
-        token = strtok_r(the_rest, " \t", &the_rest);
-    } */
-    
-    /*The second statement in line - the macro name*/
-    /* *macro_name = strdup(token);
-    if (*macro_name == NULL){
-        printf("no macro name defined");
-        exit(1);
-    } */
-    /*TODO: check if the name is a function or other saved word*/
-
-    /*check for more data after*/
-    /* if (strtok_r(the_rest, " \t", &the_rest) != NULL){
-        printf("error in input file: more data after macro name");
+    if (strncmp("macr", macr_name_ptr, 4) != 0){
+        printf("Error occurred while parse macro name\n");
         exit(1);
     }
-    return macro_name; */
-    return token_ptr;
+
+    macr_name_ptr = strtok(NULL, " \t");
+    if(macr_name_ptr != NULL){
+        strncpy(macro_name, macr_name_ptr, MAX_LEN_MACRO_NAME);
+    }
+    else{
+        /*TODO: check if you need to not exit and return all errors*/
+        printf("Missing of macro name\n");
+        exit(1);
+    }
+    printf("%s\n*\n\n", macro_name);
+    return macro_name;
 }
 
 bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** macro_list, int macro_counter){
+    char* macro_name = find_macro_name(line);
+    printf("%c\n\n", macro_name[0]);
     /**macro_list = realloc(*macro_list, (macro_counter + 1) * sizeof(macro *));
     CHECK_ALLOCATION(*macro_list);*/
     return true;
