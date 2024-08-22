@@ -162,11 +162,12 @@ char* get_first_word_in_line(char* line){
 }
 
 void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, size_t macro_counter){
+    node *macr_line;
     int macro_name_index = search_index_in_macr_names(macro_name, macro_list, macro_counter);
     if (macro_name_index < 0){
         printf("unexpected error while parsing the macro.\n");
     }
-    node *macr_line = macro_list[macro_name_index]->first_line;
+    macr_line = macro_list[macro_name_index]->first_line;
     while (macr_line->value != NULL)
     {
         printf("%s", macr_line->value);
@@ -174,32 +175,32 @@ void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macr
     }
 }
 
-node *create_new_line_node(){
+node *create_new_line_node(char* line){
     node *line_node = (node *)malloc(sizeof(node));
     CHECK_ALLOCATION(line_node);
+
     line_node->value = (char *)malloc(MAX_LEN_LINE_ASSEMBLY_FILE);
     CHECK_ALLOCATION(line_node->value);
+    line_node->value = string_copy(line);
+
     line_node->next = NULL;
     return line_node;
 }
 
-void insert_the_first_line(char* line, macro** macro_list, size_t macro_counter){
-    
-    first_line_allocate_memory(macro_list, macro_counter);
-    last_line_allocate_memory(macro_list, macro_counter);
-    macro_list[macro_counter]->first_line->value = string_copy(line);
-    macro_list[macro_counter]->last_line->value = string_copy(line);
-}
 bool we_are_in_the_first_macro_line(macro** macro_list, size_t macro_counter){
     return macro_list[macro_counter]->first_line->value == NULL;
 }
 void insert_line_into_the_macro_list(char* line, macro** macro_list, size_t macro_counter){
+        node *line_node = create_new_line_node(line);
         if(we_are_in_the_first_macro_line(macro_list, macro_counter)){
-            insert_the_first_line(line, macro_list, macro_counter);
+            /*insert the first_line pointer and the last_line pointer to point at the node*/
+            macro_list[macro_counter]->first_line = line_node;
+            macro_list[macro_counter]->last_line = line_node;
         }
-
-        node *macr_line = ;
-        /*todo after sport, i need to save pointer to the last line (tail) and insert lines from there*/
+        else{
+            macro_list[macro_counter]->last_line->next = line_node;
+            macro_list[macro_counter]->last_line = line_node;
+        }
 
 }
 
@@ -242,6 +243,7 @@ bool parse_file_with_macros(const char *filename){
                 }
                 break;
             case INSIDE_MACRO:
+                insert_line_into_the_macro_list(line, &macro_list, macro_counter);
                 printf("%s", line);
                 line_state = END_MACRO;
                 break;
@@ -250,6 +252,7 @@ bool parse_file_with_macros(const char *filename){
                 line_state = OTHER;
                 break;
             case CALLED_MACRO:
+                
                 line_state = OTHER;
                 break;
             default:
