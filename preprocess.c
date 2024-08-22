@@ -90,24 +90,21 @@ bool validation_check_of_macro_line(char* line){
     return true;
 }
 
-void initialize_macro_list_values(macro** macro_list, size_t macro_counter){
+void initialize_macro_list_values(macro** macro_list, int macro_counter){
     *macro_list = realloc(*macro_list, (macro_counter + 1) * sizeof(macro));
     CHECK_ALLOCATION(*macro_list);
 
-    (*macro_list)[macro_counter].first_line->value = NULL;
-    (*macro_list)[macro_counter].first_line->next = NULL;
-
-    (*macro_list)[macro_counter].last_line->value = NULL;
-    (*macro_list)[macro_counter].last_line->next = NULL;
+    (*macro_list)[macro_counter].first_line = NULL;
+    (*macro_list)[macro_counter].last_line = NULL;
 }
 
-bool insert_new_macro_to_the_macro_list(char* macro_name, macro** macro_list, size_t macro_counter){
+bool insert_new_macro_to_the_macro_list(char* macro_name, macro** macro_list, int macro_counter){
     initialize_macro_list_values(macro_list, macro_counter);
     (*macro_list)[macro_counter].macro_name = string_copy(macro_name);
     return true;
 }
 
-int search_index_in_macr_names(char* word, macro** macro_list, size_t macro_counter){
+int search_index_in_macr_names(char* word, macro** macro_list, int macro_counter){
     /*return the index of "word" the macro statement or -1 if "word" is not in macro_list*/
     int i;
     for(i = 0; i < macro_counter; i++){
@@ -118,7 +115,7 @@ int search_index_in_macr_names(char* word, macro** macro_list, size_t macro_coun
     return -1;
 }
 
-bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** macro_list, size_t macro_counter){
+bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** macro_list, int macro_counter){
     char* macro_name;
     if(!validation_check_of_macro_line(line)){
         printf("invalid macro line, exiting\n");
@@ -138,7 +135,7 @@ bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** ma
     return false;
 }
 
-bool is_it_a_macro_call(char* line, char* first_word_in_line, macro** macro_list, size_t macro_counter){
+bool is_it_a_macro_call(char* line, char* first_word_in_line, macro** macro_list, int macro_counter){
     /*TODO: separate to valid macro call and check macro statement*/
     if(check_how_many_elements_in_line(line) != 1)
         return false;
@@ -157,7 +154,7 @@ char* get_first_word_in_line(char* line){
     return first_word;
 }
 
-void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, size_t macro_counter){
+void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, int macro_counter){
     node *macr_line;
     int macro_name_index = search_index_in_macr_names(macro_name, macro_list, macro_counter);
     if (macro_name_index < 0){
@@ -183,10 +180,10 @@ node *create_new_line_node(char* line){
     return line_node;
 }
 
-bool we_are_in_the_first_macro_line(macro** macro_list, size_t macro_counter){
-    return macro_list[macro_counter]->first_line->value == NULL;
+bool we_are_in_the_first_macro_line(macro** macro_list, int macro_counter){
+    return (*macro_list)[macro_counter].first_line == NULL;
 }
-void insert_line_into_the_macro_list(char* line, macro** macro_list, size_t macro_counter){
+void insert_line_into_the_macro_list(char* line, macro** macro_list, int macro_counter){
         node *line_node = create_new_line_node(line);
         if(we_are_in_the_first_macro_line(macro_list, macro_counter)){
             /*insert the first_line pointer and the last_line pointer to point at the node*/
@@ -206,7 +203,7 @@ bool parse_file_with_macros(const char *filename){
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     char* first_word_in_line = (char*)malloc(MAX_LEN_MACRO_NAME*sizeof(char));
 
-    size_t macro_counter = 0;
+    int macro_counter = -1;
     size_t allocated_memory_macro_list = 2;
     macro* macro_list = (macro*)calloc(allocated_memory_macro_list, sizeof(macro));
     CHECK_ALLOCATION(macro_list);
@@ -224,7 +221,7 @@ bool parse_file_with_macros(const char *filename){
         switch (line_state){
             case OTHER:
                 if (is_it_a_macro_statement_line(line)){
-                    if (check_validation_macro_line_add_macro_to_macros_list(line, &macro_list, macro_counter)){
+                    if (check_validation_macro_line_add_macro_to_macros_list(line, &macro_list, macro_counter + 1)){
                         macro_counter++;
                         line_state = INSIDE_MACRO;}
                     else{
