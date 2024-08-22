@@ -64,19 +64,17 @@ bool validation_check_of_macro_line(char* line){
     char* line_copy = string_copy(line);
     int num_of_elem_in_line = check_how_many_elements_in_line(line_copy);
     char* macr_name_ptr = strtok(line_copy, " \t");
+    free(line_copy);
 
     if (num_of_elem_in_line != 2){
         printf("Check validation of macro statement line and try again\n");
-        free(line_copy);
         return false;
     }
 
     if (strncmp("macr", macr_name_ptr, 4) != 0){
         printf("Error occurred while parsing macro name\n");
-        free(line_copy);
         return false;
     }
-    free(line_copy);
     return true;
 }
 
@@ -87,9 +85,13 @@ bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** ma
         exit(1);
     }
     macro_name = find_macro_name(line);
-    printf("%c\n\n", macro_name[0]);
-    /**macro_list = realloc(*macro_list, (macro_counter + 1) * sizeof(macro *));
-    CHECK_ALLOCATION(*macro_list);*/
+    *macro_list = realloc(*macro_list, (macro_counter + 1) * sizeof(macro));
+    CHECK_ALLOCATION(*macro_list);
+    (*macro_list)[macro_counter].macro_name = string_copy(macro_name);
+    (*macro_list)[macro_counter].macro_beginning = line;
+    (*macro_list)[macro_counter].num_of_lines = 0;
+
+    free(macro_name);
     return true;
 }
 
