@@ -127,7 +127,10 @@ bool parse_file_with_macros(const char *filename){
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
 
     size_t macro_counter = 0;
-    macro* macro_list = NULL;
+    size_t allocated_memory_macro_list = 2;
+    macro* macro_list = (macro*)calloc(allocated_memory_macro_list, sizeof(macro));
+    CHECK_ALLOCATION(macro_list);
+    /*TODO: add more space to macro list using realloc */
 
     if(file == NULL){
         /*Error opening file*/
@@ -147,6 +150,10 @@ bool parse_file_with_macros(const char *filename){
                         printf("Error occurred while parsing the macro");
                         return false;
                     }
+                }
+                if (is_it_a_macro_call(line, &macro_list, macro_counter)){
+                    line_state = CALLED_MACRO;
+
                 }
                 break;
             case INSIDE_MACRO:
