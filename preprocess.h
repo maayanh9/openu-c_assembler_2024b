@@ -26,5 +26,5 @@ typedef struct macro{
     char* macro_beginning;
 } macro;
 
-int preprocess_macro(const char *input_file_name);
+bool preprocess_macro(const char *input_file_name);
 #endif

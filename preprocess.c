@@ -97,11 +97,11 @@ bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** ma
     return true;
 }
 
-bool does_it_found_in_macr_names(char* line, macro** macro_list){
+bool does_it_found_in_macr_names(char* line, macro** macro_list, size_t macro_counter){
     char* line_copy = string_copy(line);
     char* first_word_in_line = strtok(line_copy, " \t");
     int i;
-    for(i = 0; i < sizeof(macro_list); i++){
+    for(i = 0; i < macro_counter; i++){
         if(strcmp((*macro_list)[i].macro_name, first_word_in_line) == 0){
             free(line_copy);
             return true;
@@ -111,28 +111,28 @@ bool does_it_found_in_macr_names(char* line, macro** macro_list){
     return false;
 }
 
-bool is_it_a_macro_call(char* line, macro** macro_list){
+bool is_it_a_macro_call(char* line, macro** macro_list, size_t macro_counter){
     if(check_how_many_elements_in_line(line) != 1)
         return false;
-    if (does_it_found_in_macr_names(line, macro_list)){
+    if (does_it_found_in_macr_names(line, macro_list, macro_counter)){
         return true;
     }
     
     return false;
 }
 
-int parse_file_with_macros(const char *filename){
+bool parse_file_with_macros(const char *filename){
     FILE *file = fopen(filename, "r");
     line_macro_state line_state;
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
 
     size_t macro_counter = 0;
-    macro* macro_list;
+    macro* macro_list = NULL;
 
     if(file == NULL){
         /*Error opening file*/
         perror("Error: ");
-        return 1;
+        return false;
     }
 
     line_state = OTHER;
@@ -145,7 +145,7 @@ int parse_file_with_macros(const char *filename){
                         line_state = INSIDE_MACRO;}
                     else{
                         printf("Error occurred while parsing the macro");
-                        exit(1);
+                        return false;
                     }
                 }
                 break;
@@ -169,11 +169,10 @@ int parse_file_with_macros(const char *filename){
     }
     
     fclose(file);
-    return 0;
+    return true;
 }
 
-int preprocess_macro(const char *input_file_name){
-    int ans = 0;
-    ans = parse_file_with_macros(input_file_name);
+bool preprocess_macro(const char *input_file_name){
+    bool ans = parse_file_with_macros(input_file_name);
     return ans;
 }

@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-int preprocess_macro(const char *input_file_name);
+bool preprocess_macro(const char *input_file_name);
 
 void assembler_process(const char *input_file_name){
     int preprocess_macro_done_successfully = preprocess_macro(input_file_name);
-    if (preprocess_macro_done_successfully == 1){
+    if (preprocess_macro_done_successfully){
         printf("file: %s error occurred in processing the file with the macros", input_file_name);
         exit(1);
     }
