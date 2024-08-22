@@ -64,24 +64,26 @@ bool validation_check_of_macro_line(char* line){
     char* line_copy = string_copy(line);
     int num_of_elem_in_line = check_how_many_elements_in_line(line_copy);
     char* macr_name_ptr = strtok(line_copy, " \t");
-    free(line_copy);
 
     if (num_of_elem_in_line != 2){
         printf("Check validation of macro statement line and try again\n");
+        free(line_copy);
         return false;
     }
 
     if (strncmp("macr", macr_name_ptr, 4) != 0){
         printf("Error occurred while parsing macro name\n");
+        free(line_copy);
         return false;
     }
+    free(line_copy);
     return true;
 }
 
 bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** macro_list, int macro_counter){
     char* macro_name;
     if(validation_check_of_macro_line(line)==false){
-        printf("invalid macro line, exiting");
+        printf("invalid macro line, exiting\n");
         exit(1);
     }
     macro_name = find_macro_name(line);
@@ -93,6 +95,30 @@ bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** ma
 
     free(macro_name);
     return true;
+}
+
+bool does_it_found_in_macr_names(char* line, macro** macro_list){
+    char* line_copy = string_copy(line);
+    char* first_word_in_line = strtok(line_copy, " \t");
+    int i;
+    for(i = 0; i < sizeof(macro_list); i++){
+        if(strcmp((*macro_list)[i].macro_name, first_word_in_line) == 0){
+            free(line_copy);
+            return true;
+            }
+    }
+    free(line_copy);
+    return false;
+}
+
+bool is_it_a_macro_call(char* line, macro** macro_list){
+    if(check_how_many_elements_in_line(line) != 1)
+        return false;
+    if (does_it_found_in_macr_names(line, macro_list)){
+        return true;
+    }
+    
+    return false;
 }
 
 int parse_file_with_macros(const char *filename){
