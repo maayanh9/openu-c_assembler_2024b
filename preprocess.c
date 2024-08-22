@@ -94,13 +94,9 @@ void initialize_macro_list_values(macro** macro_list, size_t macro_counter){
     *macro_list = realloc(*macro_list, (macro_counter + 1) * sizeof(macro));
     CHECK_ALLOCATION(*macro_list);
 
-    (*macro_list)[macro_counter].first_line = malloc(sizeof(node));
-    CHECK_ALLOCATION((*macro_list)[macro_counter].first_line);
     (*macro_list)[macro_counter].first_line->value = NULL;
     (*macro_list)[macro_counter].first_line->next = NULL;
 
-    (*macro_list)[macro_counter].last_line = malloc(sizeof(node));
-    CHECK_ALLOCATION((*macro_list)[macro_counter].last_line);
     (*macro_list)[macro_counter].last_line->value = NULL;
     (*macro_list)[macro_counter].last_line->next = NULL;
 }
