@@ -12,6 +12,7 @@ typedef enum {
     OTHER
 } line_macro_state;
 
+
 char* string_copy(const char* str_input) {
     char* str_copy = (char *)malloc(strlen(str_input) + 1);
     CHECK_ALLOCATION(str_copy);
@@ -88,27 +89,37 @@ bool validation_check_of_macro_line(char* line){
     free(line_copy);
     return true;
 }
-bool insert_new_macro_to_the_macro_list(char* macro_name, macro** macro_list, size_t macro_counter){
+
+void initialize_macro_list_values(macro** macro_list, size_t macro_counter){
     *macro_list = realloc(*macro_list, (macro_counter + 1) * sizeof(macro));
     CHECK_ALLOCATION(*macro_list);
-    
-    (*macro_list)[macro_counter].macro_name = string_copy(macro_name);
-    (*macro_list)[macro_counter].lines_inside = malloc(sizeof(node));
-    CHECK_ALLOCATION((*macro_list)[macro_counter].lines_inside);
 
-    (*macro_list)[macro_counter].lines_inside->value = NULL;
-    (*macro_list)[macro_counter].lines_inside->next = NULL;
+    (*macro_list)[macro_counter].first_line = malloc(sizeof(node));
+    CHECK_ALLOCATION((*macro_list)[macro_counter].first_line);
+    (*macro_list)[macro_counter].first_line->value = NULL;
+    (*macro_list)[macro_counter].first_line->next = NULL;
+
+    (*macro_list)[macro_counter].last_line = malloc(sizeof(node));
+    CHECK_ALLOCATION((*macro_list)[macro_counter].last_line);
+    (*macro_list)[macro_counter].last_line->value = NULL;
+    (*macro_list)[macro_counter].last_line->next = NULL;
+}
+
+bool insert_new_macro_to_the_macro_list(char* macro_name, macro** macro_list, size_t macro_counter){
+    initialize_macro_list_values(macro_list, macro_counter);
+    (*macro_list)[macro_counter].macro_name = string_copy(macro_name);
     return true;
 }
 
-bool is_it_found_in_macr_names(char* first_word_in_line, macro** macro_list, size_t macro_counter){
+int search_index_in_macr_names(char* word, macro** macro_list, size_t macro_counter){
+    /*return the index of "word" the macro statement or -1 if "word" is not in macro_list*/
     int i;
     for(i = 0; i < macro_counter; i++){
-        if(strcmp((*macro_list)[i].macro_name, first_word_in_line) == 0){
-            return true;
+        if(strcmp((*macro_list)[i].macro_name, word) == 0){
+            return i;
             }
     }
-    return false;
+    return -1;
 }
 
 bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** macro_list, size_t macro_counter){
@@ -118,7 +129,7 @@ bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** ma
         return false;
     }
     macro_name = find_macro_name(line);
-    if(is_it_found_in_macr_names(macro_name, macro_list, macro_counter)){
+    if(search_index_in_macr_names(macro_name, macro_list, macro_counter) != -1){
         printf("Duplicate macro name, change the name and try again.\n");
         return false;
     }
@@ -132,16 +143,15 @@ bool check_validation_macro_line_add_macro_to_macros_list(char *line, macro** ma
 }
 
 bool is_it_a_macro_call(char* line, char* first_word_in_line, macro** macro_list, size_t macro_counter){
+    /*TODO: separate to valid macro call and check macro statement*/
     if(check_how_many_elements_in_line(line) != 1)
         return false;
-    if (is_it_found_in_macr_names(first_word_in_line, macro_list, macro_counter)){
+    if (search_index_in_macr_names(first_word_in_line, macro_list, macro_counter) >= 0){
         return true;
     }
     return false;
 }
-char* get_macr_line_reference(char* line){
-    return line;
-}
+
 
 char* get_first_word_in_line(char* line){
     char* line_copy = string_copy(line);
@@ -149,6 +159,48 @@ char* get_first_word_in_line(char* line){
     char* first_word = string_copy(first_word_token);
     free(line_copy);
     return first_word;
+}
+
+void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, size_t macro_counter){
+    int macro_name_index = search_index_in_macr_names(macro_name, macro_list, macro_counter);
+    if (macro_name_index < 0){
+        printf("unexpected error while parsing the macro.\n");
+    }
+    node *macr_line = macro_list[macro_name_index]->first_line;
+    while (macr_line->value != NULL)
+    {
+        printf("%s", macr_line->value);
+        macr_line = macr_line->next;
+    }
+}
+
+node *create_new_line_node(){
+    node *line_node = (node *)malloc(sizeof(node));
+    CHECK_ALLOCATION(line_node);
+    line_node->value = (char *)malloc(MAX_LEN_LINE_ASSEMBLY_FILE);
+    CHECK_ALLOCATION(line_node->value);
+    line_node->next = NULL;
+    return line_node;
+}
+
+void insert_the_first_line(char* line, macro** macro_list, size_t macro_counter){
+    
+    first_line_allocate_memory(macro_list, macro_counter);
+    last_line_allocate_memory(macro_list, macro_counter);
+    macro_list[macro_counter]->first_line->value = string_copy(line);
+    macro_list[macro_counter]->last_line->value = string_copy(line);
+}
+bool we_are_in_the_first_macro_line(macro** macro_list, size_t macro_counter){
+    return macro_list[macro_counter]->first_line->value == NULL;
+}
+void insert_line_into_the_macro_list(char* line, macro** macro_list, size_t macro_counter){
+        if(we_are_in_the_first_macro_line(macro_list, macro_counter)){
+            insert_the_first_line(line, macro_list, macro_counter);
+        }
+
+        node *macr_line = ;
+        /*todo after sport, i need to save pointer to the last line (tail) and insert lines from there*/
+
 }
 
 bool parse_file_with_macros(const char *filename){
@@ -184,6 +236,7 @@ bool parse_file_with_macros(const char *filename){
                     }
                 }
                 if (is_it_a_macro_call(line, first_word_in_line, &macro_list, macro_counter)){
+                    
                     line_state = CALLED_MACRO;
 
                 }

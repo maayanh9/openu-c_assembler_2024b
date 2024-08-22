@@ -18,7 +18,8 @@ typedef struct node{
 
 typedef struct macro{
     char *macro_name;
-    node *lines_inside;
+    node *first_line;
+    node *last_line;
 } macro;
 
 
