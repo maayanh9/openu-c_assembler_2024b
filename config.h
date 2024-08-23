@@ -1,8 +1,0 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
-
-#define MAX_LEN_LINE_ASSEMBLY_FILE 81
-#define MAX_LEN_MACRO_NAME 76
-#define MAX_LEN_OF_A_SINGLE_WORD 80
-
-#endif

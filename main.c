@@ -5,8 +5,6 @@
 #include "preprocess.h"
 
 
-bool preprocess_macro(const char *input_file_name);
-
 void assembler_process(const char *input_file_name){
     int preprocess_macro_done_successfully = preprocess_macro(input_file_name);
     if (!preprocess_macro_done_successfully){

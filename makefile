@@ -13,7 +13,7 @@ $(PROG_NAME): $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o
 $(BUILD_DIR)/main.o: main.c preprocess.h
 	gcc $(FLAGS) -c main.c -o $(BUILD_DIR)/main.o
 
-$(BUILD_DIR)/preprocess.o: preprocess.c preprocess.h config.h
+$(BUILD_DIR)/preprocess.o: preprocess.c preprocess.h settings.h
 	gcc $(FLAGS) -c preprocess.c -o $(BUILD_DIR)/preprocess.o
 
 create_dir:

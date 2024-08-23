@@ -1,7 +1,7 @@
 #ifndef PREPROCESS_H
 #define PREPROCESS_H
 
-#include "config.h"
+#include "settings.h"
 
 #define IS_SPACE_OR_TAB(char1) (char1 == ' ' || char1 == '\t')
 #define CHECK_ALLOCATION(ptr) do { \
