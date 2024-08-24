@@ -318,7 +318,7 @@ bool preprocess_macro(const char *input_file_name){
     /* The main function of the preprocessor, used in main.c
     error_flag will change to "true" if there are errors in the input*/
     /*TODO: handle the error flag instead of the exit(1)*/
-    bool errors_flag = false;
+    /*bool errors_flag = false;*/
     bool ans = parse_file_with_macros(input_file_name);
     return ans;
 }
