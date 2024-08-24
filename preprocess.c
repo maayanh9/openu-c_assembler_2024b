@@ -110,6 +110,7 @@ void initialize_macro_list_values(macro** macro_list, int last_index_inserted_to
 
     (*macro_list)[last_index_inserted_to_macro_list].first_line = NULL;
     (*macro_list)[last_index_inserted_to_macro_list].last_line = NULL;
+    memset((*macro_list)[last_index_inserted_to_macro_list].macro_name, 0, MAX_LEN_MACRO_NAME);
 }
 
 void insert_new_macro_to_the_macro_list(char* macro_name, macro** macro_list, int *last_index_inserted_to_macro_list){
@@ -157,7 +158,7 @@ bool is_it_a_macro_call(macro** macro_list, int last_index_inserted_to_macro_lis
 }
 
 
-void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, int last_index_inserted_to_macro_list){
+void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, int last_index_inserted_to_macro_list, FILE* output_file){
     node *macr_line;
     int macro_name_index = search_index_in_macr_names(macro_name, macro_list, last_index_inserted_to_macro_list);
     if (macro_name_index < 0){
@@ -167,7 +168,7 @@ void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macr
     macr_line = (*macro_list)[macro_name_index].first_line;
     while (macr_line != NULL && macr_line->value != NULL)
     {
-        printf("%s", macr_line->value);
+        fprintf(output_file, "%s", macr_line->value);
         macr_line = macr_line->next;
     }
 }
@@ -202,7 +203,8 @@ void insert_line_into_the_macro_list(char* line, macro** macro_list, int last_in
 void insert_first_word_in_line_into_parsed_line_struct(const char* line, line_data_struct* parsed_line){
     char* line_copy = string_copy(line);
     char* first_word_token = strtok(line_copy, " \t\r\n");
-    strcpy(parsed_line->first_word_in_line, first_word_token);
+    if(first_word_token != NULL)
+        strcpy(parsed_line->first_word_in_line, first_word_token);
     free(line_copy);
 }
 
@@ -239,7 +241,6 @@ line_macro_state the_state_of_the_line(line_macro_state last_line_state, line_da
 void free_one_macro_statement(macro* one_macro) {
     node* next_macr;
     node* current_macr= one_macro-> first_line;
-    free(one_macro->macro_name);
 
     while (current_macr != NULL) {
         next_macr = current_macr->next;
@@ -258,45 +259,59 @@ void free_macro_list(macro* macro_list, size_t macro_count) {
     free(macro_list);
 }
 
-bool parse_file_with_macros(const char *filename){
-    FILE *file = fopen(filename, "r");
-    line_macro_state line_state;
+
+bool parse_file_with_macros(const char *input_file_name){
+    FILE *input_file = fopen(input_file_name, "r");
+    FILE *output_file;
+    line_macro_state line_state = REGULAR_LINE;
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
 
     int last_index_inserted_to_macro_list = -1;
     macro* macro_list = NULL;
+    char output_file_name[sizeof(input_file_name)+4];
+    strcpy(output_file_name, input_file_name);
+    strcat(output_file_name, ".am");
+    
 
-    if(file == NULL){
+    if(input_file == NULL){
         /*Error opening file*/
         perror("Error: ");
         return false;
     }
 
-    while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, file) != NULL){
+    output_file = fopen(output_file_name, "w");
+    if(input_file == NULL){
+        /*Error opening file*/
+        perror("Error: ");
+        return false;
+    }
+
+    while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         line_data_struct parsed_line = create_parsed_line(line);
         line_state = the_state_of_the_line(line_state, parsed_line, &macro_list, last_index_inserted_to_macro_list);
         switch (line_state){
             case REGULAR_LINE:
-                printf("%s", line);
-            break;
+                fprintf(output_file, "%s", line);
+                break;
             case MACR_CREATION_CALL:
                 check_validation_macro_line_add_macro_to_macros_list(parsed_line, &macro_list, &last_index_inserted_to_macro_list);
-            break;
+                break;
             case INSIDE_THE_MACRO:
                 insert_line_into_the_macro_list(line, &macro_list, last_index_inserted_to_macro_list);
                 break;
             case ENDMACR_LINE:
                 break;
             case CALLED_A_MACRO:
-                insert_macro_lines_instead_of_the_macro_call(parsed_line.first_word_in_line, &macro_list, last_index_inserted_to_macro_list);
+                insert_macro_lines_instead_of_the_macro_call(parsed_line.first_word_in_line, &macro_list, last_index_inserted_to_macro_list, output_file);
                 break;
             default:
                 break;
         }
     }
     
-    fclose(file);
-    free_macro_list(macro_list, last_index_inserted_to_macro_list);
+    fclose(input_file);
+    fclose(output_file);
+    free_macro_list(macro_list, last_index_inserted_to_macro_list + 1);
     return true;
 }
 
