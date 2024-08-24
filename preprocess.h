@@ -12,12 +12,12 @@
 } while (0)
 
 typedef struct node{
-    const char *value;
+    char *value;
     struct node* next;
 } node;
 
 typedef struct macro{
-    char *macro_name;
+    char macro_name[MAX_LEN_MACRO_NAME];
     node *first_line;
     node *last_line;
 } macro;

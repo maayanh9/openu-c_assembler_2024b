@@ -5,8 +5,9 @@
 #include "preprocess.h"
 
 
+
 void assembler_process(const char *input_file_name){
-    int preprocess_macro_done_successfully = preprocess_macro(input_file_name);
+    bool preprocess_macro_done_successfully = preprocess_macro(input_file_name);
     if (!preprocess_macro_done_successfully){
         printf("file: %s error occurred in processing the file with the macros", input_file_name);
         exit(1);
