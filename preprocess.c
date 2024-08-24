@@ -257,6 +257,15 @@ void free_macro_list(macro* macro_list, size_t macro_count) {
     free(macro_list);
 }
 
+bool check_if_file_opened_successfully(FILE *file){
+    if(file == NULL){
+        /*Error opening file*/
+        perror("Error: ");
+        return false;
+    }
+    return true;
+}
+
 
 bool parse_file_with_macros(const char *input_file_name){
     FILE *input_file = fopen(input_file_name, "r");
@@ -270,19 +279,11 @@ bool parse_file_with_macros(const char *input_file_name){
     strcpy(output_file_name, input_file_name);
     strcat(output_file_name, ".am");
     
-
-    if(input_file == NULL){
-        /*Error opening file*/
-        perror("Error: ");
-        return false;
-    }
-
     output_file = fopen(output_file_name, "w");
-    if(input_file == NULL){
-        /*Error opening file*/
-        perror("Error: ");
+
+    if(!check_if_file_opened_successfully(input_file) || !check_if_file_opened_successfully(output_file))
         return false;
-    }
+    
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         line_data_struct parsed_line = create_parsed_line(line);
