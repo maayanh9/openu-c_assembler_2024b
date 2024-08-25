@@ -11,7 +11,7 @@ char* string_copy(const char* str_input) {
     return str_copy;
 }
 
-char* change_file_extention(char* file_name, char* file_extention){
+char* change_file_extention(const char* file_name, const char* file_extention){
     char* last_dot_in_file = strrchr(file_name, '.');
     size_t file_len_without_extention;
     size_t new_file_name_len;
@@ -21,7 +21,7 @@ char* change_file_extention(char* file_name, char* file_extention){
         new_file_name_len = file_len_without_extention + strlen(file_extention) + 1; /* plus one for \0*/
         new_file_name = (char *)malloc(new_file_name_len);
         CHECK_ALLOCATION(new_file_name);
-        strncpy(new_file_name, file_extention, file_len_without_extention);
+        strncpy(new_file_name, file_name, file_len_without_extention);
         new_file_name[file_len_without_extention] = '\0';
         strcat(new_file_name, file_extention);
     }

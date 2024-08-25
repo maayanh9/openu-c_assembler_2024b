@@ -275,10 +275,11 @@ bool parse_file_with_macros(const char *input_file_name){
 
     int last_index_inserted_to_macro_list = -1;
     macro* macro_list = NULL;
-    char *output_file_name = (char *)malloc(strlen(input_file_name) + 4);
+    char *output_file_name = change_file_extention(input_file_name, FILE_EXTENTION_PREPROCESSOR);
+    /*char *output_file_name = (char *)malloc(strlen(input_file_name) + 4);
     CHECK_ALLOCATION(output_file_name);
     strcpy(output_file_name, input_file_name);
-    strcat(output_file_name, ".am");
+    strcat(output_file_name, ".am");*/
     
     output_file = fopen(output_file_name, "w");
 

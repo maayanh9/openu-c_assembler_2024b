@@ -10,7 +10,7 @@
 
 char* string_copy(const char* str_input);
 
-char* change_file_extention(char* file_name, char* file_extention);
+char* change_file_extention(const char* file_name, const char* file_extention);
 
 
 #endif
