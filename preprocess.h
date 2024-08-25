@@ -2,14 +2,11 @@
 #define PREPROCESS_H
 
 #include "settings.h"
+#include "utils.h"
+
 
 #define IS_SPACE_OR_TAB(char1) (char1 == ' ' || char1 == '\t')
-#define CHECK_ALLOCATION(ptr) do { \
-    if ((ptr) == NULL) { \
-        printf("Failed in allocating memory\n"); \
-        exit(1); \
-    } \
-} while (0)
+
 
 typedef struct node{
     char *value;

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "preprocess.h"
+#include "utils.h"
 
 typedef enum {
     REGULAR_LINE,
@@ -25,14 +26,6 @@ typedef struct ParsedLine
     char first_word_in_line[MAX_LEN_OF_A_SINGLE_WORD];
 } ParsedLine;
 
-
-
-char* string_copy(const char* str_input) {
-    char* str_copy = (char *)malloc(strlen(str_input) + 1); /* plus 1 for \0*/
-    CHECK_ALLOCATION(str_copy);
-    strcpy(str_copy, str_input);
-    return str_copy;
-}
 
 bool is_macro_declaration_line(ParsedLine parsed_line){
     if(strcmp(parsed_line.first_word_in_line, "macr") == 0)
