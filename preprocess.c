@@ -10,15 +10,15 @@ typedef enum {
     INSIDE_THE_MACRO,
     ENDMACR_LINE,
     CALLED_A_MACRO
-} line_macro_state;
+} LineMacroState;
 
 
-typedef struct line_data_struct
+typedef struct ParsedLine
 {
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     int how_many_elements_in_line;
     char first_word_in_line[MAX_LEN_OF_A_SINGLE_WORD];
-} line_data_struct;
+} ParsedLine;
 
 
 
@@ -29,14 +29,13 @@ char* string_copy(const char* str_input) {
     return str_copy;
 }
 
-bool is_it_a_macro_statement_line(line_data_struct parsed_line){
+bool is_macro_declaration_line(ParsedLine parsed_line){
     if(strcmp(parsed_line.first_word_in_line, "macr") == 0)
         return true;
-    
     return false;
 }
 
-bool is_it_a_end_macro_statement_line(line_data_struct parsed_line){
+bool is_macro_end_statement_line(ParsedLine parsed_line){
     if(strcmp(parsed_line.first_word_in_line, "endmacr") == 0){
         if (parsed_line.how_many_elements_in_line == 1)
             return true;
@@ -81,7 +80,7 @@ int check_how_many_elements_in_line(const char *line){
     return c;
 }
 
-bool validation_check_of_macro_line(line_data_struct parsed_line){
+bool validation_check_of_macro_line(ParsedLine parsed_line){
     char* line_copy = string_copy(parsed_line.line);
     char* macr_name_ptr = strtok(line_copy, " \t\r\n");
 
@@ -128,7 +127,7 @@ int search_index_in_macr_names(char* word, macro** macro_list, int last_index_in
     return -1;
 }
 
-void check_validation_macro_line_add_macro_to_macros_list(line_data_struct parsed_line, macro** macro_list, int *last_index_inserted_to_macro_list){
+void add_macro_to_macros_list(ParsedLine parsed_line, macro** macro_list, int *last_index_inserted_to_macro_list){
     char* macro_name;
     if(!validation_check_of_macro_line(parsed_line)){
         printf("invalid macro line, exiting\n");
@@ -144,7 +143,7 @@ void check_validation_macro_line_add_macro_to_macros_list(line_data_struct parse
     free(macro_name);
 }
 
-bool is_it_a_macro_call(macro** macro_list, int last_index_inserted_to_macro_list, line_data_struct parsed_line){
+bool is_it_a_macro_call(macro** macro_list, int last_index_inserted_to_macro_list, ParsedLine parsed_line){
     /*TODO: separate to valid macro call and check macro statement*/
     if(parsed_line.how_many_elements_in_line != 1)
         /*according to the course forum, there should not be more word after macro call */
@@ -181,12 +180,14 @@ node *create_new_line_node(char* line){
     return line_node;
 }
 
-bool we_are_in_the_first_macro_line(macro** macro_list, int last_index_inserted_to_macro_list){
+
+bool is_in_first_macro_line(macro** macro_list, int last_index_inserted_to_macro_list){
     return (*macro_list)[last_index_inserted_to_macro_list].first_line == NULL;
 }
-void insert_line_into_the_macro_list(char* line, macro** macro_list, int last_index_inserted_to_macro_list){
+/*TODO: remove macro_list and last index inserted, pass last macro pointer directly*/
+void insert_line_into_the_latest_macro(char* line, macro** macro_list, int last_index_inserted_to_macro_list){
         node *line_node = create_new_line_node(line);
-        if(we_are_in_the_first_macro_line(macro_list, last_index_inserted_to_macro_list)){
+        if(is_in_first_macro_line(macro_list, last_index_inserted_to_macro_list)){
             /*insert the first_line pointer and the last_line pointer to point at the node*/
             (*macro_list)[last_index_inserted_to_macro_list].first_line = line_node;
             (*macro_list)[last_index_inserted_to_macro_list].last_line = line_node;
@@ -198,7 +199,7 @@ void insert_line_into_the_macro_list(char* line, macro** macro_list, int last_in
 
 }
 
-void insert_first_word_in_line_into_parsed_line_struct(const char* line, line_data_struct* parsed_line){
+void insert_first_word_in_line_into_parsed_line_struct(const char* line, ParsedLine* parsed_line){
     char* line_copy = string_copy(line);
     char* first_word_token = strtok(line_copy, " \t\r\n");
     if(first_word_token != NULL)
@@ -206,8 +207,8 @@ void insert_first_word_in_line_into_parsed_line_struct(const char* line, line_da
     free(line_copy);
 }
 
-line_data_struct create_parsed_line(const char* line){
-    line_data_struct parsed_line;
+ParsedLine parse_line(const char* line){
+    ParsedLine parsed_line;
     insert_first_word_in_line_into_parsed_line_struct(line, &parsed_line);
     strcpy(parsed_line.line, line);
     parsed_line.how_many_elements_in_line = check_how_many_elements_in_line(line);
@@ -215,21 +216,21 @@ line_data_struct create_parsed_line(const char* line){
 }
 
 
-line_macro_state the_state_of_the_line(line_macro_state last_line_state, line_data_struct parsed_line, macro** macro_list, int last_index_inserted_to_macro_list){
+LineMacroState transition_line_state(LineMacroState last_line_state, ParsedLine parsed_line, macro** macro_list, int last_index_inserted_to_macro_list){
     if(last_line_state == INSIDE_THE_MACRO || last_line_state == MACR_CREATION_CALL){
-        if (is_it_a_end_macro_statement_line(parsed_line))
+        if (is_macro_end_statement_line(parsed_line))
             return ENDMACR_LINE;
         else
             return INSIDE_THE_MACRO;
     }
     
-    if(is_it_a_macro_statement_line(parsed_line))
+    if(is_macro_declaration_line(parsed_line))
         return MACR_CREATION_CALL;
     
     if(is_it_a_macro_call(macro_list, last_index_inserted_to_macro_list, parsed_line))
         return CALLED_A_MACRO;
 
-    if (is_it_a_end_macro_statement_line(parsed_line)){
+    if (is_macro_end_statement_line(parsed_line)){
         printf("invalid line:\t%s\nfix it and try again later\n", parsed_line.line);
         exit(1);
     }
@@ -268,9 +269,10 @@ bool check_if_file_opened_successfully(FILE *file){
 
 
 bool parse_file_with_macros(const char *input_file_name){
+    bool result = false;
     FILE *input_file = fopen(input_file_name, "r");
     FILE *output_file;
-    line_macro_state line_state = REGULAR_LINE;
+    LineMacroState line_state = REGULAR_LINE;
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
 
     int last_index_inserted_to_macro_list = -1;
@@ -281,22 +283,24 @@ bool parse_file_with_macros(const char *input_file_name){
     
     output_file = fopen(output_file_name, "w");
 
-    if(!check_if_file_opened_successfully(input_file) || !check_if_file_opened_successfully(output_file))
-        return false;
+    if(!check_if_file_opened_successfully(input_file) || !check_if_file_opened_successfully(output_file)){
+        result = false;
+        goto cleanup;}
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
-        line_data_struct parsed_line = create_parsed_line(line);
-        line_state = the_state_of_the_line(line_state, parsed_line, &macro_list, last_index_inserted_to_macro_list);
+        ParsedLine parsed_line = parse_line(line);
+        /** TODO: simplify last macro usage, pass around a pointer to the last macro only */
+        line_state = transition_line_state(line_state, parsed_line, &macro_list, last_index_inserted_to_macro_list);
         switch (line_state){
             case REGULAR_LINE:
                 fprintf(output_file, "%s", line);
                 break;
             case MACR_CREATION_CALL:
-                check_validation_macro_line_add_macro_to_macros_list(parsed_line, &macro_list, &last_index_inserted_to_macro_list);
+                add_macro_to_macros_list(parsed_line, &macro_list, &last_index_inserted_to_macro_list);
                 break;
             case INSIDE_THE_MACRO:
-                insert_line_into_the_macro_list(line, &macro_list, last_index_inserted_to_macro_list);
+                insert_line_into_the_latest_macro(line, &macro_list, last_index_inserted_to_macro_list);
                 break;
             case ENDMACR_LINE:
                 break;
@@ -307,18 +311,18 @@ bool parse_file_with_macros(const char *input_file_name){
                 break;
         }
     }
-    
+    result = true; 
+cleanup: 
     fclose(input_file);
     fclose(output_file);
     free_macro_list(macro_list, last_index_inserted_to_macro_list + 1);
-    return true;
+    return result;
 }
 
 bool preprocess_macro(const char *input_file_name){
     /* The main function of the preprocessor, used in main.c
     error_flag will change to "true" if there are errors in the input*/
     /*TODO: handle the error flag instead of the exit(1)*/
-    /*bool errors_flag = false;*/
     bool ans = parse_file_with_macros(input_file_name);
     return ans;
 }
