@@ -10,7 +10,27 @@
 #define FILE_EXTENTION_OBJECT_FILE ".ob"
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
+typedef struct LineMetaData{
+    int data_counter;
+    int instruction_counter;
+}LineMetaData;
 
+typedef enum{
+    empty_or_comment_line,
+    introduction_line,
+    command_line
+}LineType;
+
+typedef struct ParsedLine{
+    HasLabel has_label;
+    char label[MAX_LEN_OF_A_SINGLE_WORD];
+
+}ParsedLine;
+
+typedef enum{
+    LABEL,
+    NO_LABEL
+} HasLabel;
 typedef enum{
     MOV,
     CMP,
@@ -36,6 +56,7 @@ typedef enum{
     EXTERN,
     ENTRY
 } AssemblyDirective;
+
 
 
 #endif
