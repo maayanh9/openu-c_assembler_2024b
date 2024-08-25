@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "preprocess.h"
-#include "utils.h"
+#include "text_handler.h"
 
 typedef enum {
     REGULAR_LINE,

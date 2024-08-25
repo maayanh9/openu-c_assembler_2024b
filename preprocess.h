@@ -2,7 +2,7 @@
 #define PREPROCESS_H
 
 #include "settings.h"
-#include "utils.h"
+#include "text_handler.h"
 
 
 #define IS_SPACE_OR_TAB(char1) (char1 == ' ' || char1 == '\t')
