@@ -10,7 +10,8 @@
 #define FILE_EXTENTION_OBJECT_FILE ".ob"
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
-typedef enum {
+
+typedef enum{
     MOV,
     CMP,
     ADD,
@@ -28,5 +29,13 @@ typedef enum {
     RTS,
     STOP
 } AssemblyCommand;
+
+typedef enum{
+    DATA,
+    STRING,
+    EXTERN,
+    ENTRY
+} AssemblyDirective;
+
 
 #endif

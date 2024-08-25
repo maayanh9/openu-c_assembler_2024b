@@ -13,11 +13,11 @@ typedef enum {
     CALLED_A_MACRO
 } LineMacroState;
 
-typedef struct macro{
+typedef struct Macro{
     char macro_name[MAX_LEN_MACRO_NAME];
-    node *first_line;
-    node *last_line;
-} macro;
+    Node *first_line;
+    Node *last_line;
+} Macro;
 
 typedef struct ParsedLine
 {
@@ -97,10 +97,10 @@ bool validation_check_of_macro_line(ParsedLine parsed_line){
     return true;
 }
 
-void initialize_macro_list_values(macro** macro_list, int last_index_inserted_to_macro_list){
+void initialize_macro_list_values(Macro** macro_list, int last_index_inserted_to_macro_list){
 
     int macro_list_len = last_index_inserted_to_macro_list + 1;
-    *macro_list = realloc(*macro_list, (macro_list_len + 1) * sizeof(macro));
+    *macro_list = realloc(*macro_list, (macro_list_len + 1) * sizeof(Macro));
     CHECK_ALLOCATION(*macro_list);
 
     (*macro_list)[last_index_inserted_to_macro_list].first_line = NULL;
@@ -108,13 +108,13 @@ void initialize_macro_list_values(macro** macro_list, int last_index_inserted_to
     memset((*macro_list)[last_index_inserted_to_macro_list].macro_name, 0, MAX_LEN_MACRO_NAME);
 }
 
-void insert_new_macro_to_the_macro_list(char* macro_name, macro** macro_list, int *last_index_inserted_to_macro_list){
+void insert_new_macro_to_the_macro_list(char* macro_name, Macro** macro_list, int *last_index_inserted_to_macro_list){
     *last_index_inserted_to_macro_list += 1;
     initialize_macro_list_values(macro_list, *last_index_inserted_to_macro_list);
     strcpy((*macro_list)[*last_index_inserted_to_macro_list].macro_name, macro_name);
 }
 
-int search_index_in_macr_names(char* word, macro** macro_list, int last_index_inserted_to_macro_list){
+int search_index_in_macr_names(char* word, Macro** macro_list, int last_index_inserted_to_macro_list){
     /*return the index of "word" the macro statement or -1 if "word" is not in macro_list*/
     int i;
     for(i = 0; i <= last_index_inserted_to_macro_list; i++){
@@ -125,7 +125,7 @@ int search_index_in_macr_names(char* word, macro** macro_list, int last_index_in
     return -1;
 }
 
-void add_macro_to_macros_list(ParsedLine parsed_line, macro** macro_list, int *last_index_inserted_to_macro_list){
+void add_macro_to_macros_list(ParsedLine parsed_line, Macro** macro_list, int *last_index_inserted_to_macro_list){
     char* macro_name;
     if(!validation_check_of_macro_line(parsed_line)){
         printf("invalid macro line, exiting\n");
@@ -141,7 +141,7 @@ void add_macro_to_macros_list(ParsedLine parsed_line, macro** macro_list, int *l
     free(macro_name);
 }
 
-bool is_it_a_macro_call(macro** macro_list, int last_index_inserted_to_macro_list, ParsedLine parsed_line){
+bool is_it_a_macro_call(Macro** macro_list, int last_index_inserted_to_macro_list, ParsedLine parsed_line){
     /*TODO: separate to valid macro call and check macro statement*/
     if(parsed_line.how_many_elements_in_line != 1)
         /*according to the course forum, there should not be more word after macro call */
@@ -153,8 +153,8 @@ bool is_it_a_macro_call(macro** macro_list, int last_index_inserted_to_macro_lis
 }
 
 
-void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macro_list, int last_index_inserted_to_macro_list, FILE* output_file){
-    node *macr_line;
+void insert_macro_lines_instead_of_the_macro_call(char* macro_name, Macro** macro_list, int last_index_inserted_to_macro_list, FILE* output_file){
+    Node *macr_line;
     int macro_name_index = search_index_in_macr_names(macro_name, macro_list, last_index_inserted_to_macro_list);
     if (macro_name_index < 0){
         printf("unexpected error while parsing the macro.\n");
@@ -168,8 +168,8 @@ void insert_macro_lines_instead_of_the_macro_call(char* macro_name, macro** macr
     }
 }
 
-node *create_new_line_node(char* line){
-    node *line_node = (node *)malloc(sizeof(node));
+Node *create_new_line_node(char* line){
+    Node *line_node = (Node *)malloc(sizeof(Node));
     CHECK_ALLOCATION(line_node);
 
     line_node->value = string_copy(line);
@@ -179,12 +179,12 @@ node *create_new_line_node(char* line){
 }
 
 
-bool is_in_first_macro_line(macro** macro_list, int last_index_inserted_to_macro_list){
+bool is_in_first_macro_line(Macro** macro_list, int last_index_inserted_to_macro_list){
     return (*macro_list)[last_index_inserted_to_macro_list].first_line == NULL;
 }
 /*TODO: remove macro_list and last index inserted, pass last macro pointer directly*/
-void insert_line_into_the_latest_macro(char* line, macro** macro_list, int last_index_inserted_to_macro_list){
-        node *line_node = create_new_line_node(line);
+void insert_line_into_the_latest_macro(char* line, Macro** macro_list, int last_index_inserted_to_macro_list){
+        Node *line_node = create_new_line_node(line);
         if(is_in_first_macro_line(macro_list, last_index_inserted_to_macro_list)){
             /*insert the first_line pointer and the last_line pointer to point at the node*/
             (*macro_list)[last_index_inserted_to_macro_list].first_line = line_node;
@@ -214,7 +214,7 @@ ParsedLine parse_line(const char* line){
 }
 
 
-LineMacroState transition_line_state(LineMacroState last_line_state, ParsedLine parsed_line, macro** macro_list, int last_index_inserted_to_macro_list){
+LineMacroState transition_line_state(LineMacroState last_line_state, ParsedLine parsed_line, Macro** macro_list, int last_index_inserted_to_macro_list){
     if(last_line_state == INSIDE_THE_MACRO || last_line_state == MACR_CREATION_CALL){
         if (is_macro_end_statement_line(parsed_line))
             return ENDMACR_LINE;
@@ -235,9 +235,9 @@ LineMacroState transition_line_state(LineMacroState last_line_state, ParsedLine 
     return REGULAR_LINE;
     
 }
-void free_one_macro_statement(macro* one_macro) {
-    node* next_macr;
-    node* current_macr= one_macro-> first_line;
+void free_one_macro_statement(Macro* one_macro) {
+    Node* next_macr;
+    Node* current_macr= one_macro-> first_line;
 
     while (current_macr != NULL) {
         next_macr = current_macr->next;
@@ -248,7 +248,7 @@ void free_one_macro_statement(macro* one_macro) {
     }
 }
 
-void free_macro_list(macro* macro_list, size_t macro_count) {
+void free_macro_list(Macro* macro_list, size_t macro_count) {
     int i;
     for (i = 0; i < macro_count; i++) {
         free_one_macro_statement(&macro_list[i]);
@@ -274,7 +274,7 @@ bool parse_file_with_macros(const char *input_file_name){
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
 
     int last_index_inserted_to_macro_list = -1;
-    macro* macro_list = NULL;
+    Macro* macro_list = NULL;
     char *output_file_name = change_file_extention(input_file_name, FILE_EXTENTION_PREPROCESSOR);
     /*char *output_file_name = (char *)malloc(strlen(input_file_name) + 4);
     CHECK_ALLOCATION(output_file_name);

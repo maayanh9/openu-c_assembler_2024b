@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "utils.h"
+#include "text_handler.h"
 
 char* string_copy(const char* str_input) {
     char* str_copy = (char *)malloc(strlen(str_input) + 1); /* plus 1 for \0*/
@@ -31,3 +31,4 @@ char* change_file_extention(const char* file_name, const char* file_extention){
     }
     return(new_file_name);
 }
+

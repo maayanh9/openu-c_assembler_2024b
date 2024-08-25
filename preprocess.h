@@ -8,10 +8,10 @@
 #define IS_SPACE_OR_TAB(char1) (char1 == ' ' || char1 == '\t')
 
 
-typedef struct node{
+typedef struct Node{
     char *value;
-    struct node* next;
-} node;
+    struct Node* next;
+} Node;
 
 typedef struct DynamicList{
     void* items;
