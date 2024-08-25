@@ -1,3 +1,4 @@
-input_example.txt
+input_example
+input_example.am
 build/*
 .vscode/*
