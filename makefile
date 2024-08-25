@@ -6,11 +6,11 @@ all: create_dir $(PROG_NAME)
 
 
 $(PROG_NAME): $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/utils.o
-	gcc $(FLAGS) $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/utils.o -o $(BUILD_DIR)/$(PROG_NAME)
+	gcc $(FLAGS) $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/assembler.o -o $(BUILD_DIR)/$(PROG_NAME)
 
 
 
-$(BUILD_DIR)/main.o: main.c preprocess.h
+$(BUILD_DIR)/main.o: main.c preprocess.h assembler.h
 	gcc $(FLAGS) -c main.c -o $(BUILD_DIR)/main.o
 
 $(BUILD_DIR)/preprocess.o: preprocess.c preprocess.h settings.h utils.h
@@ -18,6 +18,9 @@ $(BUILD_DIR)/preprocess.o: preprocess.c preprocess.h settings.h utils.h
 
 $(BUILD_DIR)/utils.o: utils.c utils.h settings.h
 	gcc $(FLAGS) -c utils.c -o $(BUILD_DIR)/utils.o
+
+$(BUILD_DIR)/assembler.o: assembler.c assembler.h settings.h
+	gcc $(FLAGS) -c assembler.c -o $(BUILD_DIR)/assembler.o
 
 create_dir:
 	mkdir -p $(BUILD_DIR)
