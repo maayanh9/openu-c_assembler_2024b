@@ -1,4 +1,4 @@
-FLAGS		= -ansi -pedantic -Wall -g
+FLAGS		= -ansi -pedantic -Wall -g -fsanitize=address
 PROG_NAME 	= assembler
 BUILD_DIR	= build
 

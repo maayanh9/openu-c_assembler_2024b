@@ -12,6 +12,11 @@ typedef enum {
     CALLED_A_MACRO
 } LineMacroState;
 
+typedef struct macro{
+    char macro_name[MAX_LEN_MACRO_NAME];
+    node *first_line;
+    node *last_line;
+} macro;
 
 typedef struct ParsedLine
 {
@@ -277,7 +282,8 @@ bool parse_file_with_macros(const char *input_file_name){
 
     int last_index_inserted_to_macro_list = -1;
     macro* macro_list = NULL;
-    char output_file_name[sizeof(input_file_name)+4];
+    char *output_file_name = (char *)malloc(strlen(input_file_name) + 4);
+    CHECK_ALLOCATION(output_file_name);
     strcpy(output_file_name, input_file_name);
     strcat(output_file_name, ".am");
     
@@ -316,6 +322,7 @@ cleanup:
     fclose(input_file);
     fclose(output_file);
     free_macro_list(macro_list, last_index_inserted_to_macro_list + 1);
+    free(output_file_name);
     return result;
 }
 

@@ -16,11 +16,12 @@ typedef struct node{
     struct node* next;
 } node;
 
-typedef struct macro{
-    char macro_name[MAX_LEN_MACRO_NAME];
-    node *first_line;
-    node *last_line;
-} macro;
+typedef struct DynamicList{
+    void* items;
+    int item_size;
+    int list_length;
+    int max_capacity;
+} DynamicList;
 
 
 bool preprocess_macro(const char *input_file_name);
