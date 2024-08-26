@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef TEXT_HANDLER_H
+#define TEXT_HANDLER_H
 
 #define CHECK_ALLOCATION(ptr) do { \
     if ((ptr) == NULL) { \

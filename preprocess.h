@@ -13,12 +13,6 @@ typedef struct Node{
     struct Node* next;
 } Node;
 
-typedef struct DynamicList{
-    void* items;
-    int item_size;
-    int list_length;
-    int max_capacity;
-} DynamicList;
 
 
 bool preprocess_macro(const char *input_file_name);

@@ -11,6 +11,20 @@
 #define FILE_EXTENTION_OBJECT_FILE ".ob"
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
+
+typedef struct GenericNode{
+
+    void *value;
+    struct GenericNode* next;
+} GenericNode;
+
+typedef struct DynamicList{
+    void* items;
+    int item_size;
+    int list_length;
+    int max_capacity;
+} DynamicList;
+
 typedef struct LineMetaData{
     int data_counter;
     int instruction_counter;
@@ -40,7 +54,7 @@ typedef enum{
     JSR,
     RTS,
     STOP
-} AssemblyCommand;
+} AssemblyInstruction;
 
 typedef enum{
     DATA,
@@ -56,22 +70,23 @@ typedef enum{
 
 
 typedef struct ParsedLine{
+    LineMetaData mete_data;
     LineType line_type;
     union LineTypes{
         char* error_str[MAX_LEN_ERROR_STR];
         struct {
             AssemblyDirective directive_type;
-            union DirectiveTypes{
-                /* data */
-            };
+            /*union DirectiveTypes{
             
+            };
+            */
         } Directive;
         struct {
-            AssemblyCommand command;
+            AssemblyInstruction instruction;
             
-        } Command;
+        } Instruction;
         
-    };
+    }LineTypes;
     
     HasLabel has_label;
     char label[MAX_LEN_OF_A_SINGLE_WORD];
