@@ -32,3 +32,12 @@ char* change_file_extention(const char* file_name, const char* file_extention){
     return(new_file_name);
 }
 
+bool check_if_file_opened_successfully(FILE *file){
+    if(file == NULL){
+        /*Error opening file*/
+        perror("Error: ");
+        return false;
+    }
+    return true;
+}
+

@@ -163,7 +163,7 @@ void insert_macro_lines_instead_of_the_macro_call(char* macro_name, Macro** macr
     macr_line = (*macro_list)[macro_name_index].first_line;
     while (macr_line != NULL && macr_line->value != NULL)
     {
-        fprintf(output_file, "%s", macr_line->value);
+        fprintf(output_file, "%s", (char*)macr_line->value);
         macr_line = macr_line->next;
     }
 }
@@ -205,7 +205,7 @@ void insert_first_word_in_line_into_parsed_line_struct(const char* line, Preproc
     free(line_copy);
 }
 
-PreprocessParsedLine parse_line(const char* line){
+PreprocessParsedLine preprocessor_parse_line(const char* line){
     PreprocessParsedLine parsed_line;
     insert_first_word_in_line_into_parsed_line_struct(line, &parsed_line);
     strcpy(parsed_line.line, line);
@@ -256,15 +256,6 @@ void free_macro_list(Macro* macro_list, size_t macro_count) {
     free(macro_list);
 }
 
-bool check_if_file_opened_successfully(FILE *file){
-    if(file == NULL){
-        /*Error opening file*/
-        perror("Error: ");
-        return false;
-    }
-    return true;
-}
-
 
 bool parse_file_with_macros(const char *input_file_name){
     bool result = false;
@@ -276,10 +267,6 @@ bool parse_file_with_macros(const char *input_file_name){
     int last_index_inserted_to_macro_list = -1;
     Macro* macro_list = NULL;
     char *output_file_name = change_file_extention(input_file_name, FILE_EXTENTION_PREPROCESSOR);
-    /*char *output_file_name = (char *)malloc(strlen(input_file_name) + 4);
-    CHECK_ALLOCATION(output_file_name);
-    strcpy(output_file_name, input_file_name);
-    strcat(output_file_name, ".am");*/
     
     output_file = fopen(output_file_name, "w");
 
@@ -289,7 +276,7 @@ bool parse_file_with_macros(const char *input_file_name){
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
-        PreprocessParsedLine parsed_line = parse_line(line);
+        PreprocessParsedLine parsed_line = preprocessor_parse_line(line);
         /** TODO: simplify last macro usage, pass around a pointer to the last macro only */
         line_state = transition_line_state(line_state, parsed_line, &macro_list, last_index_inserted_to_macro_list);
         switch (line_state){

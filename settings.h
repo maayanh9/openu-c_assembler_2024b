@@ -6,17 +6,21 @@
 #define MAX_LEN_OF_A_SINGLE_WORD 80
 #define MAX_LEN_ERROR_STR 300
 
+#define MAX_NUMBERS_IN_DATA_LABEL 38
+#define MAX_ASCII_STRING_LEN 74
+
 #define FILE_EXTENTION_PREPROCESSOR ".am"
 #define FILE_EXTENTION_INPUT_ASSEMBLER_FILE ".as"
 #define FILE_EXTENTION_OBJECT_FILE ".ob"
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
 
-typedef struct GenericNode{
 
+typedef struct Node{
     void *value;
-    struct GenericNode* next;
-} GenericNode;
+    struct Node* next;
+} Node;
+
 
 typedef struct DynamicList{
     void* items;
@@ -68,6 +72,12 @@ typedef enum{
     NO_LABEL
 } HasLabel;
 
+typedef enum{
+    IMMEDIATE,
+    DIRECT,
+    DIRECT_REGISTER,
+    INDIRECT_REGISTER
+} AddressingMethod;
 
 typedef struct ParsedLine{
     LineMetaData mete_data;
@@ -76,10 +86,11 @@ typedef struct ParsedLine{
         char* error_str[MAX_LEN_ERROR_STR];
         struct {
             AssemblyDirective directive_type;
-            /*union DirectiveTypes{
-            
-            };
-            */
+            union DirectiveTypes{
+                int data_numbers[MAX_NUMBERS_IN_DATA_LABEL];
+                char ascii_string[MAX_ASCII_STRING_LEN];
+                char entry_or_extern[MAX_LEN_OF_A_SINGLE_WORD - 6];
+            } DirectiveTypes;
         } Directive;
         struct {
             AssemblyInstruction instruction;
