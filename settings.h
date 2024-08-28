@@ -27,6 +27,7 @@ typedef struct Node{
 typedef struct LineMetaData{
     int data_counter;
     int instruction_counter;
+    int line_counter;
 }LineMetaData;
 
 typedef enum{
@@ -79,7 +80,7 @@ typedef struct ParsedLine{
     LineMetaData mete_data;
     LineType line_type;
     union LineTypes{
-        char* error_str[MAX_LEN_ERROR_STR];
+        char error_str[MAX_LEN_ERROR_STR];
         struct {
             AssemblyDirective directive_type;
             union DirectiveTypes{

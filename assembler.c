@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include "text_handler.h"
 #include "settings.h"
 #include "dynamic_list.h"
@@ -64,7 +65,52 @@ bool is_a_valid_label(char* label){
 
 }*/
 
-ParsedLine parse_line(char* line, LineMetaData counters){
+bool string_contains_only_letters_and_numbers(char* string){
+    char* letter_ptr = string;
+    while (*letter_ptr != '\0'){
+        if(!isalnum(*letter_ptr)){
+            return false;
+        }
+        letter_ptr ++;
+    }
+    return true;
+}
+
+bool is_a_dup_label_name(char* label, DynamicList symbols_table){
+    int i;
+    for(i = 0; i< symbols_table.list_length; i++){
+        if(strcmp(label, ((ParsedLine*)symbols_table.items[i])->label) == 0){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool check_label_validation(char* label, DynamicList symbols_table){
+    if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table))
+        return false;
+    return true;
+}
+void error_line_instead_of_label_line(ParsedLine* parsed_line, int line_counter){
+    parsed_line->line_type = ERROR_LINE;
+    sprintf(parsed_line->LineTypes.error_str, "Invalid label at line %d.\n", line_counter);
+}
+
+bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* words_ctr, char* first_word_in_line, DynamicList *symbols_table, int line_counter){
+    parsed_line->has_label = HAS_LABEL;
+    /*Copy the label without the ':' */
+    strncpy(parsed_line->label, first_word_in_line, strlen(first_word_in_line) - 1);
+    (*parsed_line).label[strlen(first_word_in_line) - 1] = '\0';
+    (*words_ctr) ++;
+    if(!check_label_validation(parsed_line->label, *symbols_table)){
+        error_line_instead_of_label_line(parsed_line, line_counter);
+        return false;
+    }
+    insert_new_cell_into_dynamic_list(symbols_table, &parsed_line);
+    return true;
+}
+
+ParsedLine parse_line(char* line, LineMetaData counters, DynamicList *symbols_table, DynamicList *errors_ptrs){
     ParsedLine parsed_line;
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
     int words_ctr = 0;
@@ -72,20 +118,21 @@ ParsedLine parse_line(char* line, LineMetaData counters){
     if (is_comment_or_empty_line(separated_words)){
         printf("%s : comment or empty\n", line);
         parsed_line.line_type = EMPTY_OR_COMMENT_LINE;
-        free_separate_line(&separated_words);
-        return parsed_line;
-        }
+        goto finished_parsing_line;
+    }
+
     if (has_a_label(separated_words)){
         printf("has a label:  %s\n", line);
-        parsed_line.has_label = HAS_LABEL;
-        strncpy(parsed_line.label, separated_words.words[0], strlen(separated_words.words[0]) - 2);
-        parsed_line.label[strlen(separated_words.words[0]) - 1] = '\0';
-        words_ctr ++;
+        if(!check_validation_and_insert_label_data(&parsed_line, &words_ctr, separated_words.words[0], symbols_table, counters.line_counter)){
+            goto finished_parsing_line;
+        }
+
+        
         /** TODO: check if label has more words after. i */
     }
     /*if (is_directive_line(separated_words, words_ctr)){
     }*/
-
+finished_parsing_line:
     free_separate_line(&separated_words);
     return parsed_line;
 }
@@ -105,10 +152,13 @@ bool first_pass(const char *input_file_name){
     LineMetaData counters;
     DynamicList parsed_lines_list;
     DynamicList symbols_table;
+    DynamicList errors_ptrs;
     initialize_dynamic_list(&parsed_lines_list, sizeof(ParsedLine));
     initialize_dynamic_list(&symbols_table, sizeof(ParsedLine *));
+    initialize_dynamic_list(&errors_ptrs, sizeof(ParsedLine *));
 
     counters.instruction_counter = 100;
+    counters.line_counter = 1;
 
     if(!check_if_file_opened_successfully(input_file)){
         result = false;
@@ -116,7 +166,8 @@ bool first_pass(const char *input_file_name){
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
-        ParsedLine parsed_line = parse_line(line, counters);
+        ParsedLine parsed_line = parse_line(line, counters, &symbols_table, &errors_ptrs);
+        counters.line_counter ++;
         printf("%d\t", parsed_line.mete_data.instruction_counter);
         insert_new_cell_into_dynamic_list(&parsed_lines_list, &parsed_line);
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
@@ -127,6 +178,7 @@ cleanup:
     fclose(input_file);
     free_dynamic_list(&parsed_lines_list);
     free_dynamic_list(&symbols_table);
+    free_dynamic_list(&errors_ptrs);
     return result;
 }
 
