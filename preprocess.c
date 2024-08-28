@@ -271,6 +271,7 @@ bool parse_file_with_macros(const char *input_file_name){
     output_file = fopen(output_file_name, "w");
 
     if(!check_if_file_opened_successfully(input_file) || !check_if_file_opened_successfully(output_file)){
+        printf("Error occurred while opening the file\n");
         result = false;
         goto cleanup;}
     
@@ -300,8 +301,8 @@ bool parse_file_with_macros(const char *input_file_name){
     }
     result = true; 
 cleanup: 
-    fclose(input_file);
     fclose(output_file);
+    fclose(input_file);
     free_macro_list(macro_list, last_index_inserted_to_macro_list + 1);
     free(output_file_name);
     return result;

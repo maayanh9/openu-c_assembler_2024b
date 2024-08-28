@@ -11,27 +11,48 @@ typedef struct SeparateLineIntoWords
     int words_counter;
 }SeparateLineIntoWords;
 
-SeparateLineIntoWords separate_line_into_words(const char *line){
+
+
+SeparateLineIntoWords separate_line_into_words(char *line){
     SeparateLineIntoWords separate_line;
     char *line_copy = string_copy(line);
     char* token_ptr = strtok(line_copy, " \t\r\n");
+    char* new_word;
     separate_line.words_counter = 0;
 
     while (token_ptr)
     {   
-        separate_line.words[separate_line.words_counter] = token_ptr;
+        new_word = string_copy(token_ptr);
+        separate_line.words[separate_line.words_counter] = new_word;
         separate_line.words_counter++;
-        printf("%s\n", token_ptr);
         token_ptr = strtok(NULL, " \t\r\n");
     }
+    free(line_copy);
     return separate_line;
 }
+void free_separate_line(SeparateLineIntoWords* separate_line) {
+    int i;
+    for (i = 0; i< separate_line->words_counter; i++) {
+        free(separate_line->words[i]);
+    }
+}
 
+bool is_comment_or_empty_line(SeparateLineIntoWords separate_word){
+    if(separate_word.words_counter == 0 || separate_word.words[0][0] == ';')
+        return true;
+    return false;
+}
 
 ParsedLine parse_line(char* line, LineMetaData counters){
     ParsedLine parsed_line;
+    SeparateLineIntoWords separated_words = separate_line_into_words(line);
     parsed_line.mete_data.instruction_counter = counters.instruction_counter;
+    if (is_comment_or_empty_line(separated_words)){
+        printf("%s : comment or empty\n", line);
+        parsed_line.line_type = EMPTY_OR_COMMENT_LINE;
+        }
 
+    free_separate_line(&separated_words);
     return parsed_line;
 }
 
@@ -45,32 +66,25 @@ void insert_line_into_lines_list(ParsedLine parsed_line, bool* result, DynamicLi
 bool first_pass(const char *input_file_name){
     bool result = false;
     FILE *input_file = fopen(input_file_name, "r");
-    FILE *output_file;
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     LineMetaData counters;
     /*DynamicList lines_list;*/
 
-    char *output_file_name = change_file_extention(input_file_name, FILE_EXTENTION_PREPROCESSOR);
     counters.instruction_counter = 100;
-    
-    output_file = fopen(output_file_name, "w");
 
-    if(!check_if_file_opened_successfully(input_file) || !check_if_file_opened_successfully(output_file)){
+    if(!check_if_file_opened_successfully(input_file)){
         result = false;
         goto cleanup;}
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         ParsedLine parsed_line = parse_line(line, counters);
-        printf("%d", parsed_line.mete_data.instruction_counter);
-        separate_line_into_words(line);
+        printf("%d\t", parsed_line.mete_data.instruction_counter);
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
     }
     result = true; 
 cleanup: 
     fclose(input_file);
-    fclose(output_file);
-    free(output_file_name);
     return result;
 }
 
