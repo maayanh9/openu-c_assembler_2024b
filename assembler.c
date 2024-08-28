@@ -47,22 +47,15 @@ bool is_comment_or_empty_line(SeparateLineIntoWords separate_word){
 }
 bool has_a_label(SeparateLineIntoWords separate_word){
     if(separate_word.words[0][strlen(separate_word.words[0]) - 1] == ':'){
-        /** TODO: check if the label is valid:
-         * p41
-         * have ascii letters and numbers
-         */
         return true;
     }
     return false;
 }
 
-/*bool is_directive_line(SeparateLineIntoWords separated_words, int word_ctr){
-    if(word_ctr <= separated_words.words_counter)
-    if(separated_words.words[word_ctr])
+/*bool is_directive_line(SeparateLineIntoWords separated_words, int parsed_words_counter){
+    if(parsed_words_counter <= separated_words.words_counter)
+    if(separated_words.words[parsed_words_counter])
     
-}
-bool is_a_valid_label(char* label){
-
 }*/
 
 bool string_contains_only_letters_and_numbers(char* string){
@@ -87,11 +80,11 @@ bool is_a_dup_label_name(char* label, DynamicList symbols_table){
     }
     return false;
 }
-bool no_words_after_label(int word_ctr){
-    return (word_ctr == 1);
+bool no_words_after_label(int parsed_words_counter){
+    return (parsed_words_counter == 1);
 }
 
-bool check_label_validation(char* label, DynamicList symbols_table, int words_ctr){
+bool is_valid_label(char* label, DynamicList symbols_table, int words_ctr){
     if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table) || no_words_after_label(words_ctr))
         return false;
     return true;
@@ -113,7 +106,7 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed
     strncpy(parsed_line->label, first_word_in_line, strlen(first_word_in_line) - 1);
     (*parsed_line).label[strlen(first_word_in_line) - 1] = '\0';
     (*parsed_words_ctr) ++;
-    if(!check_label_validation(parsed_line->label, *symbols_table, words_in_line_counter)){
+    if(!is_valid_label(parsed_line->label, *symbols_table, words_in_line_counter)){
         error_line_instead_of_label_line(parsed_line, line_counter, words_in_line_counter);
         return false;
     }
