@@ -8,6 +8,7 @@
 
 #define MAX_NUMBERS_IN_DATA_LABEL 38
 #define MAX_ASCII_STRING_LEN 74
+#define MAX_LEN_OF_LABEL 31
 
 #define FILE_EXTENTION_PREPROCESSOR ".am"
 #define FILE_EXTENTION_INPUT_ASSEMBLER_FILE ".as"
@@ -28,6 +29,7 @@ typedef struct DynamicList{
     int list_length;
     int max_capacity;
 } DynamicList;
+
 
 typedef struct LineMetaData{
     int data_counter;
@@ -68,9 +70,10 @@ typedef enum{
 } AssemblyDirective;
 
 typedef enum{
-    LABEL,
-    NO_LABEL
+    NO_LABEL,
+    HAS_LABEL
 } HasLabel;
+
 
 typedef enum{
     IMMEDIATE,
@@ -100,7 +103,7 @@ typedef struct ParsedLine{
     }LineTypes;
     
     HasLabel has_label;
-    char label[MAX_LEN_OF_A_SINGLE_WORD];
+    char label[MAX_LEN_OF_LABEL + 1];
 
 }ParsedLine;
 

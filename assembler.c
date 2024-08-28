@@ -57,8 +57,10 @@ ParsedLine parse_line(char* line, LineMetaData counters){
     if (is_comment_or_empty_line(separated_words)){
         printf("%s : comment or empty\n", line);
         parsed_line.line_type = EMPTY_OR_COMMENT_LINE;
+        free_separate_line(&separated_words);
+        return parsed_line;
         }
-    else if (has_a_label(separated_words)){
+    if (has_a_label(separated_words)){
         printf("%s : has a label\n", line);
         parsed_line.has_label = LABEL;
         strncpy(parsed_line.label, separated_words.words[0], strlen(separated_words.words[0]) - 2);
