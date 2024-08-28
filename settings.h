@@ -23,13 +23,6 @@ typedef struct Node{
 } Node;
 
 
-typedef struct DynamicList{
-    void* items;
-    int item_size;
-    int list_length;
-    int max_capacity;
-} DynamicList;
-
 
 typedef struct LineMetaData{
     int data_counter;
@@ -106,9 +99,6 @@ typedef struct ParsedLine{
     char label[MAX_LEN_OF_LABEL + 1];
 
 }ParsedLine;
-
-
-
 
 
 #endif

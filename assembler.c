@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "text_handler.h"
 #include "settings.h"
+#include "dynamic_list.h"
+
 
 typedef struct SeparateLineIntoWords
 {
@@ -83,9 +85,6 @@ ParsedLine parse_line(char* line, LineMetaData counters){
     }
     /*if (is_directive_line(separated_words, words_ctr)){
     }*/
-    
-    
-
 
     free_separate_line(&separated_words);
     return parsed_line;
@@ -104,8 +103,10 @@ bool first_pass(const char *input_file_name){
     FILE *input_file = fopen(input_file_name, "r");
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     LineMetaData counters;
-    /*ParsedLine *parsed_lines_list;*/
-    /*DynamicList lines_list;*/
+    DynamicList parsed_lines_list;
+    DynamicList symbols_table;
+    initialize_dynamic_list(&parsed_lines_list, sizeof(ParsedLine));
+    initialize_dynamic_list(&symbols_table, sizeof(ParsedLine *));
 
     counters.instruction_counter = 100;
 
@@ -117,12 +118,15 @@ bool first_pass(const char *input_file_name){
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         ParsedLine parsed_line = parse_line(line, counters);
         printf("%d\t", parsed_line.mete_data.instruction_counter);
+        insert_new_cell_into_dynamic_list(&parsed_lines_list, &parsed_line);
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
 
     }
     result = true; 
 cleanup: 
     fclose(input_file);
+    free_dynamic_list(&parsed_lines_list);
+    free_dynamic_list(&symbols_table);
     return result;
 }
 

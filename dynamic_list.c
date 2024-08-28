@@ -24,6 +24,11 @@ void bigger_capacity(DynamicList* list){
 void insert_new_cell_into_dynamic_list(DynamicList* list, void* new_cell){
     if( list->list_length == list->max_capacity)
         bigger_capacity(list);
-    ((void**)list->items)[list->item_size] = new_cell;
+    ((void**)list->items)[list->list_length] = new_cell;
     list->list_length++;
+}
+
+void free_dynamic_list(DynamicList* list){
+    free(list->items);
+    list->items = NULL;
 }
