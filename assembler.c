@@ -42,6 +42,13 @@ bool is_comment_or_empty_line(SeparateLineIntoWords separate_word){
         return true;
     return false;
 }
+bool has_a_label(SeparateLineIntoWords separate_word){
+    if(separate_word.words[0][strlen(separate_word.words[0]) - 1] == ':'){
+        /** TODO: check if the label is valid */
+        return true;
+    }
+    return false;
+}
 
 ParsedLine parse_line(char* line, LineMetaData counters){
     ParsedLine parsed_line;
@@ -51,6 +58,13 @@ ParsedLine parse_line(char* line, LineMetaData counters){
         printf("%s : comment or empty\n", line);
         parsed_line.line_type = EMPTY_OR_COMMENT_LINE;
         }
+    else if (has_a_label(separated_words)){
+        printf("%s : has a label\n", line);
+        parsed_line.has_label = LABEL;
+        strncpy(parsed_line.label, separated_words.words[0], strlen(separated_words.words[0]) - 2);
+        parsed_line.label[strlen(separated_words.words[0]) - 1] = '\0';
+    }
+
 
     free_separate_line(&separated_words);
     return parsed_line;
@@ -62,6 +76,7 @@ void insert_line_into_lines_list(ParsedLine parsed_line, bool* result, DynamicLi
         add_more_space(&lines_list);
     }
 }*/
+
 
 bool first_pass(const char *input_file_name){
     bool result = false;
@@ -81,6 +96,7 @@ bool first_pass(const char *input_file_name){
         ParsedLine parsed_line = parse_line(line, counters);
         printf("%d\t", parsed_line.mete_data.instruction_counter);
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
+
     }
     result = true; 
 cleanup: 
