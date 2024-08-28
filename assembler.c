@@ -57,7 +57,7 @@ bool has_a_label(SeparateLineIntoWords separate_word){
 }
 
 /*bool is_directive_line(SeparateLineIntoWords separated_words, int word_ctr){
-    if(word_ctr <= )
+    if(word_ctr <= separated_words.words_counter)
     if(separated_words.words[word_ctr])
     
 }
@@ -80,10 +80,6 @@ bool is_a_dup_label_name(char* label, DynamicList symbols_table){
     int i;
     for(i = 0; i< symbols_table.list_length; i++){
         ParsedLine* parsed_line = (ParsedLine*)symbols_table.items[i];
-        /*printf("Checking ParsedLine at index %d:\n", i);
-        printf("  Label: %s\n", parsed_line->label);
-        printf("  Line Type: %d\n", parsed_line->line_type);
-        printf("  Instruction Counter: %d\n", parsed_line->mete_data.instruction_counter);*/
         
         if(strcmp(label, parsed_line->label) == 0){
             return true;
@@ -91,26 +87,34 @@ bool is_a_dup_label_name(char* label, DynamicList symbols_table){
     }
     return false;
 }
+bool no_words_after_label(int word_ctr){
+    return (word_ctr == 1);
+}
 
-bool check_label_validation(char* label, DynamicList symbols_table){
-    if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table))
+bool check_label_validation(char* label, DynamicList symbols_table, int words_ctr){
+    if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table) || no_words_after_label(words_ctr))
         return false;
     return true;
 }
-void error_line_instead_of_label_line(ParsedLine* parsed_line, int line_counter){
+void error_line_instead_of_label_line(ParsedLine* parsed_line, int line_counter, int words_ctr){
     parsed_line->line_type = ERROR_LINE;
-    sprintf(parsed_line->LineTypes.error_str, "Invalid label: %s, at line %d.\n", parsed_line->label, line_counter);
+    if(no_words_after_label(words_ctr)){
+        sprintf(parsed_line->LineTypes.error_str, "Label with no context after: %s, at line %d.\n", parsed_line->label, line_counter);
+    }
+    else{
+        sprintf(parsed_line->LineTypes.error_str, "Invalid label: %s, at line %d.\n", parsed_line->label, line_counter);
+    }
     printf("%s\t**********", parsed_line->LineTypes.error_str);
 }
 
-bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* words_ctr, char* first_word_in_line, DynamicList *symbols_table, int line_counter){
+bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed_words_ctr, char* first_word_in_line, DynamicList *symbols_table, int line_counter, int words_in_line_counter){
     parsed_line->has_label = HAS_LABEL;
     /*Copy the label without the ':' */
     strncpy(parsed_line->label, first_word_in_line, strlen(first_word_in_line) - 1);
     (*parsed_line).label[strlen(first_word_in_line) - 1] = '\0';
-    (*words_ctr) ++;
-    if(!check_label_validation(parsed_line->label, *symbols_table)){
-        error_line_instead_of_label_line(parsed_line, line_counter);
+    (*parsed_words_ctr) ++;
+    if(!check_label_validation(parsed_line->label, *symbols_table, words_in_line_counter)){
+        error_line_instead_of_label_line(parsed_line, line_counter, words_in_line_counter);
         return false;
     }
     insert_new_cell_into_dynamic_list(symbols_table, parsed_line);
@@ -128,13 +132,9 @@ ParsedLine* parse_line(char* line, LineMetaData counters, DynamicList *symbols_t
     }
 
     if (has_a_label(separated_words)){
-        printf("has a label:  %s\n", line);
-        if(!check_validation_and_insert_label_data(parsed_line, &words_ctr, separated_words.words[0], symbols_table, counters.line_counter)){
+        if(!check_validation_and_insert_label_data(parsed_line, &words_ctr, separated_words.words[0], symbols_table, counters.line_counter, separated_words.words_counter)){
             goto finished_parsing_line;
         }
-
-        
-        /** TODO: check if label has more words after. i */
     }
     /*if (is_directive_line(separated_words, words_ctr)){
     }*/

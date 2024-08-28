@@ -15,7 +15,10 @@
 #define FILE_EXTENTION_OBJECT_FILE ".ob"
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
-
+/*
+static const char* instructions_commands_list[16] = {"mov", "cmp", "add", "sub", "lea", "clr", "not", "inc", "dec", "jmp", "bne", "red", "prn", "jsr", "rts", "stop"};
+static const char* directives_list[4] = {"data", "string", "extern", "entry"};
+*/
 
 typedef struct Node{
     void *value;
