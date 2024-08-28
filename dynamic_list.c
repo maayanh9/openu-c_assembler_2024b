@@ -15,6 +15,7 @@ void initialize_dynamic_list(DynamicList* list, int item_size){
 }
 
 void bigger_capacity(DynamicList* list){
+    /*Double the capacity of the dynamic list by 2*/
     list->max_capacity *= 2;
     list->items = realloc(list->items, list->max_capacity * list->item_size);
     CHECK_ALLOCATION(list->items);
