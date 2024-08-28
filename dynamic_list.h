@@ -7,6 +7,7 @@ typedef struct DynamicList{
     int item_size;
     int list_length;
     int max_capacity;
+    bool is_allocated;
 } DynamicList;
 
 void initialize_dynamic_list(DynamicList* list, int item_size);

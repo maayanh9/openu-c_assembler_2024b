@@ -79,7 +79,13 @@ bool string_contains_only_letters_and_numbers(char* string){
 bool is_a_dup_label_name(char* label, DynamicList symbols_table){
     int i;
     for(i = 0; i< symbols_table.list_length; i++){
-        if(strcmp(label, ((ParsedLine*)symbols_table.items[i])->label) == 0){
+        ParsedLine* parsed_line = (ParsedLine*)symbols_table.items[i];
+        /*printf("Checking ParsedLine at index %d:\n", i);
+        printf("  Label: %s\n", parsed_line->label);
+        printf("  Line Type: %d\n", parsed_line->line_type);
+        printf("  Instruction Counter: %d\n", parsed_line->mete_data.instruction_counter);*/
+        
+        if(strcmp(label, parsed_line->label) == 0){
             return true;
         }
     }
@@ -93,7 +99,8 @@ bool check_label_validation(char* label, DynamicList symbols_table){
 }
 void error_line_instead_of_label_line(ParsedLine* parsed_line, int line_counter){
     parsed_line->line_type = ERROR_LINE;
-    sprintf(parsed_line->LineTypes.error_str, "Invalid label at line %d.\n", line_counter);
+    sprintf(parsed_line->LineTypes.error_str, "Invalid label: %s, at line %d.\n", parsed_line->label, line_counter);
+    printf("%s\t**********", parsed_line->LineTypes.error_str);
 }
 
 bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* words_ctr, char* first_word_in_line, DynamicList *symbols_table, int line_counter){
@@ -106,24 +113,23 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* words_
         error_line_instead_of_label_line(parsed_line, line_counter);
         return false;
     }
-    insert_new_cell_into_dynamic_list(symbols_table, &parsed_line);
+    insert_new_cell_into_dynamic_list(symbols_table, parsed_line);
     return true;
 }
 
-ParsedLine parse_line(char* line, LineMetaData counters, DynamicList *symbols_table, DynamicList *errors_ptrs){
-    ParsedLine parsed_line;
+ParsedLine* parse_line(char* line, LineMetaData counters, DynamicList *symbols_table, DynamicList *errors_ptrs, ParsedLine *parsed_line){
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
     int words_ctr = 0;
-    parsed_line.mete_data.instruction_counter = counters.instruction_counter;
+    parsed_line->mete_data.instruction_counter = counters.instruction_counter;
     if (is_comment_or_empty_line(separated_words)){
         printf("%s : comment or empty\n", line);
-        parsed_line.line_type = EMPTY_OR_COMMENT_LINE;
+        parsed_line->line_type = EMPTY_OR_COMMENT_LINE;
         goto finished_parsing_line;
     }
 
     if (has_a_label(separated_words)){
         printf("has a label:  %s\n", line);
-        if(!check_validation_and_insert_label_data(&parsed_line, &words_ctr, separated_words.words[0], symbols_table, counters.line_counter)){
+        if(!check_validation_and_insert_label_data(parsed_line, &words_ctr, separated_words.words[0], symbols_table, counters.line_counter)){
             goto finished_parsing_line;
         }
 
@@ -166,10 +172,13 @@ bool first_pass(const char *input_file_name){
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
-        ParsedLine parsed_line = parse_line(line, counters, &symbols_table, &errors_ptrs);
+        ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
+        CHECK_ALLOCATION(parsed_line);
+        parse_line(line, counters, &symbols_table, &errors_ptrs, parsed_line);
         counters.line_counter ++;
-        printf("%d\t", parsed_line.mete_data.instruction_counter);
-        insert_new_cell_into_dynamic_list(&parsed_lines_list, &parsed_line);
+        printf("%d\t", parsed_line->mete_data.instruction_counter);
+        insert_new_cell_into_dynamic_list(&parsed_lines_list, parsed_line);
+        parsed_lines_list.is_allocated = true;
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
 
     }
