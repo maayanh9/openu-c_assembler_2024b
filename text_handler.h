@@ -2,6 +2,7 @@
 #define TEXT_HANDLER_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #define CHECK_ALLOCATION(ptr) do { \
     if ((ptr) == NULL) { \

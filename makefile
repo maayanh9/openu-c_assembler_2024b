@@ -5,8 +5,8 @@ BUILD_DIR	= build
 all: create_dir $(PROG_NAME)
 
 
-$(PROG_NAME): $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/text_handler.o $(BUILD_DIR)/assembler.o
-	gcc $(FLAGS) $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/text_handler.o $(BUILD_DIR)/assembler.o -o $(BUILD_DIR)/$(PROG_NAME)
+$(PROG_NAME): $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/text_handler.o $(BUILD_DIR)/assembler.o  $(BUILD_DIR)/dynamic_list.o
+	gcc $(FLAGS) $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/text_handler.o $(BUILD_DIR)/assembler.o $(BUILD_DIR)/dynamic_list.o -o $(BUILD_DIR)/$(PROG_NAME)
 
 
 
@@ -21,6 +21,9 @@ $(BUILD_DIR)/text_handler.o: text_handler.c text_handler.h settings.h
 
 $(BUILD_DIR)/assembler.o: assembler.c assembler.h settings.h
 	gcc $(FLAGS) -c assembler.c -o $(BUILD_DIR)/assembler.o
+
+$(BUILD_DIR)/dynamic_list.o: dynamic_list.c dynamic_list.h text_handler.h
+	gcc $(FLAGS) -c dynamic_list.c -o $(BUILD_DIR)/dynamic_list.o
 
 create_dir:
 	mkdir -p $(BUILD_DIR)

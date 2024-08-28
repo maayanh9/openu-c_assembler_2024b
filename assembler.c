@@ -44,15 +44,28 @@ bool is_comment_or_empty_line(SeparateLineIntoWords separate_word){
 }
 bool has_a_label(SeparateLineIntoWords separate_word){
     if(separate_word.words[0][strlen(separate_word.words[0]) - 1] == ':'){
-        /** TODO: check if the label is valid */
+        /** TODO: check if the label is valid:
+         * p41
+         * have ascii letters and numbers
+         */
         return true;
     }
     return false;
 }
 
+/*bool is_directive_line(SeparateLineIntoWords separated_words, int word_ctr){
+    if(word_ctr <= )
+    if(separated_words.words[word_ctr])
+    
+}
+bool is_a_valid_label(char* label){
+
+}*/
+
 ParsedLine parse_line(char* line, LineMetaData counters){
     ParsedLine parsed_line;
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
+    int words_ctr = 0;
     parsed_line.mete_data.instruction_counter = counters.instruction_counter;
     if (is_comment_or_empty_line(separated_words)){
         printf("%s : comment or empty\n", line);
@@ -61,11 +74,17 @@ ParsedLine parse_line(char* line, LineMetaData counters){
         return parsed_line;
         }
     if (has_a_label(separated_words)){
-        printf("%s : has a label\n", line);
-        parsed_line.has_label = LABEL;
+        printf("has a label:  %s\n", line);
+        parsed_line.has_label = HAS_LABEL;
         strncpy(parsed_line.label, separated_words.words[0], strlen(separated_words.words[0]) - 2);
         parsed_line.label[strlen(separated_words.words[0]) - 1] = '\0';
+        words_ctr ++;
+        /** TODO: check if label has more words after. i */
     }
+    /*if (is_directive_line(separated_words, words_ctr)){
+    }*/
+    
+    
 
 
     free_separate_line(&separated_words);
@@ -85,6 +104,7 @@ bool first_pass(const char *input_file_name){
     FILE *input_file = fopen(input_file_name, "r");
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     LineMetaData counters;
+    /*ParsedLine *parsed_lines_list;*/
     /*DynamicList lines_list;*/
 
     counters.instruction_counter = 100;
