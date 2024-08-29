@@ -78,31 +78,86 @@ bool is_the_last_word_in_this_line(int parsed_words_counter, int how_many_words_
     return (parsed_words_counter == how_many_words_in_line);
 }
 
-void error_line(ParsedLine* parsed_line, int line_counter, int parsed_words_ctr, int how_many_words_in_line, char* type){
+void error_line(ParsedLine* parsed_line, int line_counter, int parsed_words_ctr, int how_many_words_in_line, char* type, char* invalid_data, DynamicList *errors_ptrs){
     /*type: directive, label or command*/
     parsed_line->line_type = ERROR_LINE;
     if(is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line)){
         sprintf(parsed_line->LineTypes.error_str, "%s with no context after: %s, at line %d.\n", type, parsed_line->label, line_counter);
     }
     else{
-        sprintf(parsed_line->LineTypes.error_str, "Invalid %s: %s, at line %d.\n", type, parsed_line->label, line_counter);
+        sprintf(parsed_line->LineTypes.error_str, "Invalid %s: %s, at line %d.\n", type, invalid_data, line_counter);
     }
+    insert_new_cell_into_dynamic_list(errors_ptrs, parsed_line);
     printf("%s\t**********", parsed_line->LineTypes.error_str);
+    
 }
-bool is_valid_directive(int directive_num, int parsed_words_ctr, int how_many_words_in_line){
-    return (directive_num != -1 || !is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line));
+bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_many_words_in_line){
+    return (directive_num != -1 && !is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line));
 }
 
-bool check_validation_and_insert_directive_data(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, int line_counter, SeparateLineIntoWords separated_words){
+bool does_not_end_with_comma(char* data_parameters){
+    return data_parameters[sizeof(data_parameters) - 1] != ',';
+}
+bool has_only_numbers_and_commas(char* data_parameters){
+    /*code*/
+}
+bool does_not_have_sequence_of_commas(char* data_parameters){
+    /*code*/
+}
+bool valid_data_num_parameters(char* data_parameters){
+    /*code*/
+}
+
+bool insert_data_directive_into_parsed_line(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
+    /*Connect again the separate words of the .data parameters, and then parse it (check if its valid) 
+    and insert it into the parsed_line struct*/
+    char data_parameters[MAX_LEN_LINE_ASSEMBLY_FILE - 5];
+    int connected_words_counter = parsed_words_ctr;
+    while (separated_words.words_counter > connected_words_counter){
+        strcat(data_parameters, separated_words.words[connected_words_counter]);
+        connected_words_counter ++;
+    }
+    
+}
+
+bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
+    AssemblyDirective directive_type = parsed_line->LineTypes.Directive.directive_type;
+    switch (directive_type)
+    {
+    case DATA:
+        /* code */
+        break;
+    case STRING:
+        /* code */
+        break;
+    case EXTERN:
+        /* code */
+        break;
+    case ENTRY:
+        /* code */
+        break;
+    
+    default:
+        break;
+    }
+    return true;
+}
+
+bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     int directive_num = which_directive(separated_words.words[*parsed_words_ctr]);
     parsed_line->line_type = DIRECTIVE_LINE;
-    if(is_valid_directive(directive_num, *parsed_words_ctr, separated_words.words_counter)){
+    if(is_valid_directive_call(directive_num, *parsed_words_ctr, separated_words.words_counter)){
         parsed_line->LineTypes.Directive.directive_type = directive_num;
         (*parsed_words_ctr) ++;
-        return true;
+        if(insert_directive_parameters(parsed_line, parsed_words_ctr, line_counter, separated_words))
+            return true;
+        else{
+            /** TODO: error line  */
+            return false;
+        }
     }
     else{
-        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, "directive");
+        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, "directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
         return false;
     }
 }
@@ -138,14 +193,14 @@ bool is_valid_label(char* label, DynamicList symbols_table, int parsed_words_ctr
 }
 
 
-bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed_words_ctr, char* first_word_in_line, DynamicList *symbols_table, int line_counter, int words_in_line_counter){
+bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed_words_ctr, char* first_word_in_line, DynamicList *symbols_table, int line_counter, int words_in_line_counter, DynamicList *errors_ptrs){
     parsed_line->has_label = HAS_LABEL;
     /*Copy the label without the ':' */
     strncpy(parsed_line->label, first_word_in_line, strlen(first_word_in_line) - 1);
     (*parsed_line).label[strlen(first_word_in_line) - 1] = '\0';
     (*parsed_words_ctr) ++;
     if(!is_valid_label(parsed_line->label, *symbols_table, *parsed_words_ctr, words_in_line_counter)){
-        error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label");
+        error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", parsed_line->label, errors_ptrs);
         return false;
     }
     insert_new_cell_into_dynamic_list(symbols_table, parsed_line);
@@ -163,26 +218,18 @@ ParsedLine* parse_line(char* line, LineMetaData counters, DynamicList *symbols_t
     }
 
     if (has_a_label(separated_words)){
-        if(!check_validation_and_insert_label_data(parsed_line, &parsed_words_ctr, separated_words.words[0], symbols_table, counters.line_counter, separated_words.words_counter)){
+        if(!check_validation_and_insert_label_data(parsed_line, &parsed_words_ctr, separated_words.words[0], symbols_table, counters.line_counter, separated_words.words_counter, errors_ptrs)){
             goto finished_parsing_line;
         }
     }
     if(is_a_directive(separated_words.words[parsed_words_ctr])){
-        
+        check_validation_and_insert_directive_parameters(parsed_line, &parsed_words_ctr, symbols_table, counters.line_counter, separated_words, errors_ptrs);
     }
-    /*if (is_directive_line(separated_words, parsed_words_ctr)){
-    }*/
+
 finished_parsing_line:
     free_separate_line(&separated_words);
     return parsed_line;
 }
-
-/** TODO: finish 
-void insert_line_into_lines_list(ParsedLine parsed_line, bool* result, DynamicList* lines_list){
-    if(lines_list->max_capacity == lines_list->item_size){
-        add_more_space(&lines_list);
-    }
-}*/
 
 
 bool first_pass(const char *input_file_name){
