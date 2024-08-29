@@ -68,7 +68,6 @@ int which_directive(char* next_unparsed_word){
     for(i = 0; i < LEN_OF_DIRECTIVE_LIST; i++){
         if(strcmp(directives_list[i], directive) == 0){
             return i;
-            printf("-");
         }
     }
     return -1;
@@ -96,28 +95,76 @@ bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_ma
 }
 
 bool does_not_end_with_comma(char* data_parameters){
-    return data_parameters[sizeof(data_parameters) - 1] != ',';
+    return data_parameters[strlen(data_parameters) - 1] != ',';
 }
 bool has_only_numbers_and_commas(char* data_parameters){
-    /*code*/
+    char* ptr = data_parameters;
+    while(*ptr){
+        if(!isdigit(*ptr) && *ptr != ','){
+            return false;
+        }
+        ptr++;
+    }
+    return true;
 }
 bool does_not_have_sequence_of_commas(char* data_parameters){
-    /*code*/
+    char* ptr = data_parameters;
+    int comma_in_a_row_counter = 0;
+    while(ptr){
+        if(*ptr == ','){
+            comma_in_a_row_counter ++;
+            return false;
+            if (comma_in_a_row_counter >= 2){
+                return false;
+            }
+        }
+        if(isdigit(*ptr)){
+            comma_in_a_row_counter = 0;
+        }
+        ptr++;
+    }
+    return true;
+
 }
 bool valid_data_num_parameters(char* data_parameters){
-    /*code*/
+    return does_not_end_with_comma(data_parameters) && has_only_numbers_and_commas(data_parameters) && does_not_have_sequence_of_commas(data_parameters);
 }
 
-bool insert_data_directive_into_parsed_line(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
-    /*Connect again the separate words of the .data parameters, and then parse it (check if its valid) 
-    and insert it into the parsed_line struct*/
-    char data_parameters[MAX_LEN_LINE_ASSEMBLY_FILE - 5];
+char* connect_data_separate_words(SeparateLineIntoWords separated_words, int parsed_words_ctr){
+    /*Connect again the separate words of the .data parameters for easier parse*/
+    char* data_parameters = (char*)malloc(sizeof(char) * (MAX_LEN_LINE_ASSEMBLY_FILE - 5));
+    *data_parameters = '\0';
     int connected_words_counter = parsed_words_ctr;
     while (separated_words.words_counter > connected_words_counter){
         strcat(data_parameters, separated_words.words[connected_words_counter]);
         connected_words_counter ++;
     }
+    return data_parameters;
+}
+
+void insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameters){
+    char* data_numbers_token = strtok(data_parameters, ",");
+    while (data_numbers_token != NULL){
+        /* code */
+    }
     
+
+}
+
+bool insert_data_directive_into_parsed_line(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
+    /* parse the .data parameters (check if its valid) 
+    and insert it into the parsed_line struct*/
+    char *data_parameters = connect_data_separate_words(separated_words, parsed_words_ctr);
+    bool answer = true;
+    if(valid_data_num_parameters(data_parameters)){
+        /*insert*/
+    }
+    else{
+        /*error*/
+    }
+
+    free(data_parameters);
+    return answer;
 }
 
 bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
@@ -138,7 +185,8 @@ bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr,
         break;
     
     default:
-        break;
+    /*for input problems*/
+        return false;
     }
     return true;
 }
