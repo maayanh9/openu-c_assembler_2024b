@@ -95,12 +95,14 @@ bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_ma
 }
 
 bool does_not_end_with_comma(char* data_parameters){
+    if(strlen(data_parameters) == 0)
+        return true;
     return data_parameters[strlen(data_parameters) - 1] != ',';
 }
 bool has_only_numbers_and_commas(char* data_parameters){
     char* ptr = data_parameters;
     while(*ptr){
-        if(!isdigit(*ptr) && *ptr != ','){
+        if(!isdigit(*ptr) && *ptr != ',' && *ptr != '+' && *ptr != '-'){
             return false;
         }
         ptr++;
@@ -110,31 +112,50 @@ bool has_only_numbers_and_commas(char* data_parameters){
 bool does_not_have_sequence_of_commas(char* data_parameters){
     char* ptr = data_parameters;
     int comma_in_a_row_counter = 0;
-    while(ptr){
+    while(*ptr){
         if(*ptr == ','){
             comma_in_a_row_counter ++;
-            return false;
             if (comma_in_a_row_counter >= 2){
                 return false;
             }
         }
-        if(isdigit(*ptr)){
+        else if(isdigit(*ptr)){
             comma_in_a_row_counter = 0;
         }
         ptr++;
     }
     return true;
-
+}
+bool have_plus_or_minus_only_after_comma(char* data_parameters){
+    char* ptr = data_parameters;
+    bool comma_flag = true;
+    while(*ptr){
+        if(*ptr == ','){
+            comma_flag = true;
+        }
+        else if(*ptr == '+' || *ptr == '-'){
+            if(!comma_flag){
+                return false;
+            }
+            comma_flag = false;
+        }
+        else{
+            comma_flag = false;
+        }
+        ptr++;
+    }
+    return true;
 }
 bool valid_data_num_parameters(char* data_parameters){
-    return does_not_end_with_comma(data_parameters) && has_only_numbers_and_commas(data_parameters) && does_not_have_sequence_of_commas(data_parameters);
+    return does_not_end_with_comma(data_parameters) && has_only_numbers_and_commas(data_parameters) 
+    && does_not_have_sequence_of_commas(data_parameters) && have_plus_or_minus_only_after_comma(data_parameters);
 }
 
 char* connect_data_separate_words(SeparateLineIntoWords separated_words, int parsed_words_ctr){
     /*Connect again the separate words of the .data parameters for easier parse*/
     char* data_parameters = (char*)malloc(sizeof(char) * (MAX_LEN_LINE_ASSEMBLY_FILE - 5));
-    *data_parameters = '\0';
     int connected_words_counter = parsed_words_ctr;
+    *data_parameters = '\0';
     while (separated_words.words_counter > connected_words_counter){
         strcat(data_parameters, separated_words.words[connected_words_counter]);
         connected_words_counter ++;
@@ -142,25 +163,37 @@ char* connect_data_separate_words(SeparateLineIntoWords separated_words, int par
     return data_parameters;
 }
 
-void insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameters){
-    char* data_numbers_token = strtok(data_parameters, ",");
-    while (data_numbers_token != NULL){
-        /* code */
+bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameters){
+    char* data_numbers_token = strtok(data_parameters, ",+");
+    int next_num;
+    int array_num_counter = 0;
+    while (data_numbers_token){
+        next_num = atoi(data_numbers_token);
+        printf("%d\t", next_num);
+        parsed_line->LineTypes.Directive.DirectiveTypes.data_numbers[array_num_counter] = next_num;
+        array_num_counter++;
+        data_numbers_token = strtok(NULL, ",");
+        if(array_num_counter >= MAX_NUMBERS_IN_DATA_LABEL){
+            return false;
+        }
     }
-    
-
+    return true;
 }
 
-bool insert_data_directive_into_parsed_line(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
+bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     /* parse the .data parameters (check if its valid) 
     and insert it into the parsed_line struct*/
-    char *data_parameters = connect_data_separate_words(separated_words, parsed_words_ctr);
+    char *data_parameters = connect_data_separate_words(separated_words, *parsed_words_ctr);
     bool answer = true;
     if(valid_data_num_parameters(data_parameters)){
-        /*insert*/
+        if(!insert_data_numbers_into_list(parsed_line, data_parameters)){
+            error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".data directive (too many integers)", data_parameters, errors_ptrs);
+            answer = false;
+        }
     }
     else{
-        /*error*/
+        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".data directive", data_parameters, errors_ptrs);
+        answer = false;
     }
 
     free(data_parameters);
@@ -169,10 +202,11 @@ bool insert_data_directive_into_parsed_line(ParsedLine* parsed_line, int* parsed
 
 bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     AssemblyDirective directive_type = parsed_line->LineTypes.Directive.directive_type;
+    bool answer = true;
     switch (directive_type)
     {
     case DATA:
-        /* code */
+        answer = insert_data_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs);
         break;
     case STRING:
         /* code */
@@ -188,7 +222,7 @@ bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr,
     /*for input problems*/
         return false;
     }
-    return true;
+    return answer;
 }
 
 bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
@@ -197,7 +231,7 @@ bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, i
     if(is_valid_directive_call(directive_num, *parsed_words_ctr, separated_words.words_counter)){
         parsed_line->LineTypes.Directive.directive_type = directive_num;
         (*parsed_words_ctr) ++;
-        if(insert_directive_parameters(parsed_line, parsed_words_ctr, line_counter, separated_words))
+        if(insert_directive_parameters(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs))
             return true;
         else{
             /** TODO: error line  */
