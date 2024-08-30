@@ -34,7 +34,7 @@ void handle_parsing_string_directive(SeparateLineIntoWords* separate_line, char*
     /* replace the last characters to \0 if they are spaces, tabs or \n
     used to make sure the last word in .string ends without those characters*/
     end_word_ptr = token_ptr + strlen(token_ptr) - 1;
-    while (end_word_ptr > token_ptr && (*end_word_ptr == ' ' || *end_word_ptr == '\t' || *end_word_ptr == '\n'))
+    while (end_word_ptr > token_ptr && (*end_word_ptr == ' ' || *end_word_ptr == '\t' || *end_word_ptr == '\n' || *end_word_ptr == '\r'))
     {
         *end_word_ptr = '\0';
         end_word_ptr --;
@@ -234,15 +234,23 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     return answer;
 }
 
-/*bool valid_string_parameter(SeparateLineIntoWords separated_words, int parsed_words_ctr){
-    
-}*/
-/** TODO: add original line to parse the string*/
-/*bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, char* line){
-    if(valid_string_parameter(separated_words, *parsed_words_ctr)){
+bool valid_string_parameter(char* string_context){
+    return (strlen(string_context) > 1 && string_context[0] == '\"' && string_context[strlen(string_context) - 1] == '\"');
+}
 
+bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, char* line){
+    if(valid_string_parameter(separated_words.words[*parsed_words_ctr])){
+        char* ascii_string = separated_words.words[*parsed_words_ctr] + 1; /* the ascii string without the " at the beginning*/
+        ascii_string[strlen(ascii_string) - 1] = '\0'; /* cut the " at the end of the string*/
+        strcpy(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string, ascii_string);
+        printf("%s\t", ascii_string);
     }
-}*/
+    else{
+        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".string directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
+        return false;
+    }
+    return true;
+}
 
 bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     AssemblyDirective directive_type = parsed_line->LineTypes.Directive.directive_type;
@@ -253,7 +261,7 @@ bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr,
         answer = insert_data_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs);
         break;
     case STRING:
-        /*answer = insert_string_directive_into_parsed_line_or_error();*/
+        answer = insert_string_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs, separated_words.words[*parsed_words_ctr]);
         break;
     case EXTERN:
         /* code */
@@ -338,7 +346,6 @@ ParsedLine* parse_line(char* line, LineMetaData counters, DynamicList *symbols_t
     int parsed_words_ctr = 0;
     parsed_line->mete_data.instruction_counter = counters.instruction_counter;
     if (is_comment_or_empty_line(separated_words)){
-        printf("%s : comment or empty\n", line);
         parsed_line->line_type = EMPTY_OR_COMMENT_LINE;
         goto finished_parsing_line;
     }
