@@ -279,7 +279,26 @@ bool is_valid_label(char* label, DynamicList symbols_table, int parsed_words_ctr
     return true;
 }
 
-bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbols_table, int parsed_words_ctr, SeparateLineIntoWords separated_words){
+bool not_a_duplicate_label_of_extern_or_entry(char* label, DynamicList entry_ptrs, DynamicList external_ptrs){
+    int i;
+    for(i = 0; i < entry_ptrs.list_length; i++){
+        ParsedLine* parsed_line = (ParsedLine*)entry_ptrs.items[i];
+        
+        if(strcmp(label, parsed_line->LineTypes.Directive.DirectiveTypes.entry_or_extern) == 0){
+            return true;
+        }
+    }
+    for(i = 0; i < external_ptrs.list_length; i++){
+        ParsedLine* parsed_line = (ParsedLine*)external_ptrs.items[i];
+        
+        if(strcmp(label, parsed_line->LineTypes.Directive.DirectiveTypes.entry_or_extern) == 0){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbols_table, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList entry_ptrs, DynamicList external_ptrs){
     if(parsed_line->has_label == HAS_LABEL){ /* ignore label for .extern and .entry */
         if(is_valid_label(parsed_line->label, symbols_table, parsed_words_ctr, separated_words.words_counter))
             printf("NOTE: in line %d, the label: %s has no meaning.\n", parsed_line->mete_data.line_counter, parsed_line->label);
@@ -287,11 +306,12 @@ bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbol
             printf("NOTE: in line %d, the label: %s has no meaning.\nIn addition, this label is also invalid label.\n", parsed_line->mete_data.line_counter, parsed_line->label);
         }
     }
-    return !is_the_last_word_in_this_line(parsed_words_ctr, separated_words.words_counter) && (string_contains_only_letters_and_numbers(separated_words.words[parsed_words_ctr + 1]));
+    return !is_the_last_word_in_this_line(parsed_words_ctr, separated_words.words_counter) && (string_contains_only_letters_and_numbers(separated_words.words[parsed_words_ctr + 1]))
+                && not_a_duplicate_label_of_extern_or_entry(separated_words.words[parsed_words_ctr + 1], entry_ptrs, external_ptrs);
 }
 
-bool insert_entry_or_extern_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList symbols_table){
-    if(valid_entry_or_extern_parameter(parsed_line, symbols_table, *parsed_words_ctr, separated_words)){
+bool insert_entry_or_extern_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList symbols_table, DynamicList entry_ptrs, DynamicList external_ptrs){
+    if(valid_entry_or_extern_parameter(parsed_line, symbols_table, *parsed_words_ctr, separated_words, entry_ptrs, external_ptrs)){
         strcpy(parsed_line->LineTypes.Directive.DirectiveTypes.entry_or_extern, separated_words.words[*parsed_words_ctr]);
         return true;
     }
@@ -316,13 +336,13 @@ bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr,
         answer = insert_string_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs, separated_words.words[*parsed_words_ctr]);
         break;
     case EXTERN:
-        answer = insert_entry_or_extern_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, separated_words, errors_ptrs, symbols_table);
+        answer = insert_entry_or_extern_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, separated_words, errors_ptrs, symbols_table, *entry_ptrs, *external_ptrs);
         if(answer){
             insert_new_cell_into_dynamic_list(external_ptrs, parsed_line);
         }
         break;
     case ENTRY:
-        answer = insert_entry_or_extern_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, separated_words, errors_ptrs, symbols_table);
+        answer = insert_entry_or_extern_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, separated_words, errors_ptrs, symbols_table, *entry_ptrs, *external_ptrs);
         if (answer){
             insert_new_cell_into_dynamic_list(entry_ptrs, parsed_line);
         }
