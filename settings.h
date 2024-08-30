@@ -89,7 +89,10 @@ typedef struct ParsedLine{
         struct {
             AssemblyDirective directive_type;
             union DirectiveTypes{
-                int data_numbers[MAX_NUMBERS_IN_DATA_LABEL];
+                struct {
+                    int num_of_elements;
+                    int data_numbers[MAX_NUMBERS_IN_DATA_LABEL];
+                }DirectiveData;
                 char ascii_string[MAX_ASCII_STRING_LEN];
                 char entry_or_extern[MAX_LEN_OF_A_SINGLE_WORD - 6];
             } DirectiveTypes;

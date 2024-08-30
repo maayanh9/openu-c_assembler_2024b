@@ -14,20 +14,49 @@ typedef struct SeparateLineIntoWords
     int words_counter;
 }SeparateLineIntoWords;
 
+void add_next_word(SeparateLineIntoWords* separate_line, char* token_ptr) {
+    char* new_word = string_copy(token_ptr);
+    separate_line->words[separate_line->words_counter] = new_word;
+    separate_line->words_counter++;
+}
 
+void handle_parsing_string_directive(SeparateLineIntoWords* separate_line, char* token_ptr){
+    char* end_word_ptr;
+    add_next_word(separate_line, token_ptr);
+    token_ptr = strtok(NULL, ""); /*the whole text after .string*/
+
+    /* move the ptr forward if there are spaces ot tabs*/
+    if (token_ptr){
+        while (*token_ptr == ' ' || *token_ptr == '\t'){
+            token_ptr++;
+        }
+    }
+    /* replace the last characters to \0 if they are spaces, tabs or \n
+    used to make sure the last word in .string ends without those characters*/
+    end_word_ptr = token_ptr + strlen(token_ptr) - 1;
+    while (end_word_ptr > token_ptr && (*end_word_ptr == ' ' || *end_word_ptr == '\t' || *end_word_ptr == '\n'))
+    {
+        *end_word_ptr = '\0';
+        end_word_ptr --;
+    }
+    add_next_word(separate_line, token_ptr);
+}
 
 SeparateLineIntoWords separate_line_into_words(char *line){
     SeparateLineIntoWords separate_line;
     char *line_copy = string_copy(line);
     char* token_ptr = strtok(line_copy, " \t\r\n");
-    char* new_word;
-    separate_line.words_counter = 0;
 
-    while (token_ptr)
-    {   
-        new_word = string_copy(token_ptr);
-        separate_line.words[separate_line.words_counter] = new_word;
-        separate_line.words_counter++;
+    separate_line.words_counter = 0;
+    
+    while (token_ptr){   
+        if (strcmp(token_ptr, ".string") == 0){
+            handle_parsing_string_directive(&separate_line, token_ptr);
+            break;
+        }
+        else {
+            add_next_word(&separate_line, token_ptr);
+        }
         token_ptr = strtok(NULL, " \t\r\n");
     }
     free(line_copy);
@@ -167,10 +196,12 @@ bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameter
     char* data_numbers_token = strtok(data_parameters, ",+");
     int next_num;
     int array_num_counter = 0;
+    parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements = 0;
     while (data_numbers_token){
         next_num = atoi(data_numbers_token);
         printf("%d\t", next_num);
-        parsed_line->LineTypes.Directive.DirectiveTypes.data_numbers[array_num_counter] = next_num;
+        parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers[array_num_counter] = next_num;
+        parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements++;
         array_num_counter++;
         data_numbers_token = strtok(NULL, ",");
         if(array_num_counter >= MAX_NUMBERS_IN_DATA_LABEL){
@@ -186,7 +217,10 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     char *data_parameters = connect_data_separate_words(separated_words, *parsed_words_ctr);
     bool answer = true;
     if(valid_data_num_parameters(data_parameters)){
-        if(!insert_data_numbers_into_list(parsed_line, data_parameters)){
+        if(insert_data_numbers_into_list(parsed_line, data_parameters)){
+            parsed_line->mete_data.data_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
+        }
+        else{
             error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".data directive (too many integers)", data_parameters, errors_ptrs);
             answer = false;
         }
@@ -200,6 +234,16 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     return answer;
 }
 
+/*bool valid_string_parameter(SeparateLineIntoWords separated_words, int parsed_words_ctr){
+    
+}*/
+/** TODO: add original line to parse the string*/
+/*bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, char* line){
+    if(valid_string_parameter(separated_words, *parsed_words_ctr)){
+
+    }
+}*/
+
 bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     AssemblyDirective directive_type = parsed_line->LineTypes.Directive.directive_type;
     bool answer = true;
@@ -209,7 +253,7 @@ bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr,
         answer = insert_data_directive_into_parsed_line_or_error(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs);
         break;
     case STRING:
-        /* code */
+        /*answer = insert_string_directive_into_parsed_line_or_error();*/
         break;
     case EXTERN:
         /* code */
