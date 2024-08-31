@@ -471,15 +471,15 @@ bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* p
     return true;
 }
 
-typedef enum{
+/*typedef enum{
     IMMEDIATE,
     DIRECT,
     DIRECT_REGISTER,
     INDIRECT_REGISTER
-} AddressingMethod;
+} AddressingMethod;*/
 
 bool is_direct(char* parameter){
-    
+
 }
 
 bool is_immediate(char* parameter){
