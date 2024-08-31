@@ -17,8 +17,26 @@
 #define FILE_EXTENTION_OBJECT_FILE ".ob"
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
-/*
-static const char* instructions_commands_list[16] = {"mov", "cmp", "add", "sub", "lea", "clr", "not", "inc", "dec", "jmp", "bne", "red", "prn", "jsr", "rts", "stop"};*/
+
+const char *instructions_commands_and_addressing[][3] = {
+    {"mov", "123", "0123"},
+    {"cmp", "0123", "0123"},
+    {"add", "123", "0123"},
+    {"sub", "123", "0123"},
+    {"lea", "123", "1"},
+    {"clr", "123", NULL},
+    {"not", "123", NULL},
+    {"inc", "123", NULL},
+    {"dec", "123", NULL},
+    {"jmp", "12", NULL},
+    {"bne", "12", NULL},
+    {"red", "123", NULL},
+    {"prn", "0123", NULL},
+    {"jsr", "12", NULL},
+    {"rts", NULL, NULL},
+    {"stop", NULL, NULL}
+};
+
 static const char* directives_list[LEN_OF_DIRECTIVE_LIST] = {"data", "string", "extern", "entry"};
 
 
