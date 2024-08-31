@@ -514,14 +514,14 @@ int get_addressing_methods(char* parameter, char** error_note){
     if(is_immediate(parameter)){
         addressing_method = IMMEDIATE;
     }
-    else if (is_direct(parameter)){
-        addressing_method = DIRECT;
-    }
     else if (is_direct_register(parameter, error_note)){
         addressing_method = DIRECT_REGISTER;
     }
     else if (is_indirect_register(parameter, error_note)){
         addressing_method = INDIRECT_REGISTER;
+    }
+    else if (is_direct(parameter)){
+        addressing_method = DIRECT;
     }
     return addressing_method;
 }
