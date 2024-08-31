@@ -552,14 +552,14 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
     }
     else if (how_many_parameters_needed == 1){
         *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
+        return (*src != -1);
     }
     else if (how_many_parameters_needed == 2){
         *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
         *dst = get_addressing_methods(parsed_instruction_parameters.words[1], error_note);
+        return (*src != -1) && (*dst != -1);
     }
     return false;
-    
-    
 }
 
 bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
