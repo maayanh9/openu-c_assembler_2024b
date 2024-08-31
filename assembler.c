@@ -117,15 +117,13 @@ bool is_the_last_word_in_this_line(int parsed_words_counter, int how_many_words_
     return (parsed_words_counter == how_many_words_in_line);
 }
 
-void error_line(ParsedLine* parsed_line, int line_counter, int parsed_words_ctr, int how_many_words_in_line, char* type, char* invalid_data, DynamicList *errors_ptrs){
+void error_line(ParsedLine* parsed_line, char* type, char* invalid_data, DynamicList *errors_ptrs){
     /*type: directive, label or command*/
+    int line_counter = parsed_line->mete_data.line_counter;
     parsed_line->line_type = ERROR_LINE;
-    if(is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line)){
-        sprintf(parsed_line->LineTypes.error_str, "%s with no context after: %s, at line %d.\n", type, parsed_line->label, line_counter);
-    }
-    else{
-        sprintf(parsed_line->LineTypes.error_str, "Invalid %s: %s, at line %d.\n", type, invalid_data, line_counter);
-    }
+
+    sprintf(parsed_line->LineTypes.error_str, "Invalid %s: %s, at line %d.\n", type, invalid_data, line_counter);
+
     insert_new_cell_into_dynamic_list(errors_ptrs, parsed_line);
     printf("%s\t**********", parsed_line->LineTypes.error_str);
     
@@ -133,11 +131,16 @@ void error_line(ParsedLine* parsed_line, int line_counter, int parsed_words_ctr,
 bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_many_words_in_line){
     return (directive_num != -1 && !is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line));
 }
-
-bool does_not_end_with_comma(char* data_parameters){
+bool starts_with_comma(char* data_parameters){
     if(strlen(data_parameters) == 0)
-        return true;
-    return data_parameters[strlen(data_parameters) - 1] != ',';
+        return false;
+    return data_parameters[0] == ',';
+}
+
+bool ends_with_comma(char* data_parameters){
+    if(strlen(data_parameters) == 0)
+        return false;
+    return data_parameters[strlen(data_parameters) - 1] == ',';
 }
 bool has_only_numbers_and_commas(char* data_parameters){
     char* ptr = data_parameters;
@@ -149,22 +152,22 @@ bool has_only_numbers_and_commas(char* data_parameters){
     }
     return true;
 }
-bool does_not_have_sequence_of_commas(char* data_parameters){
+bool have_sequence_of_commas(char* data_parameters){
     char* ptr = data_parameters;
     int comma_in_a_row_counter = 0;
     while(*ptr){
         if(*ptr == ','){
             comma_in_a_row_counter ++;
             if (comma_in_a_row_counter >= 2){
-                return false;
+                return true;
             }
         }
-        else if(isdigit(*ptr)){
+        else {
             comma_in_a_row_counter = 0;
         }
         ptr++;
     }
-    return true;
+    return false;
 }
 bool have_plus_or_minus_only_after_comma(char* data_parameters){
     char* ptr = data_parameters;
@@ -187,8 +190,8 @@ bool have_plus_or_minus_only_after_comma(char* data_parameters){
     return true;
 }
 bool valid_data_num_parameters(char* data_parameters){
-    return does_not_end_with_comma(data_parameters) && has_only_numbers_and_commas(data_parameters) 
-    && does_not_have_sequence_of_commas(data_parameters) && have_plus_or_minus_only_after_comma(data_parameters);
+    return !ends_with_comma(data_parameters) && !starts_with_comma(data_parameters) && has_only_numbers_and_commas(data_parameters) 
+    && !have_sequence_of_commas(data_parameters) && have_plus_or_minus_only_after_comma(data_parameters);
 }
 
 char* connect_unparsed_separate_strings(SeparateLineIntoWords separated_words, int parsed_words_ctr){
@@ -233,12 +236,12 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
             parsed_line->mete_data.instruction_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
         }
         else{
-            error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".data directive (too many integers)", data_parameters, errors_ptrs);
+            error_line(parsed_line, ".data directive (too many integers)", data_parameters, errors_ptrs);
             answer = false;
         }
     }
     else{
-        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".data directive", data_parameters, errors_ptrs);
+        error_line(parsed_line, ".data directive", data_parameters, errors_ptrs);
         answer = false;
     }
 
@@ -258,7 +261,7 @@ bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, 
         parsed_line->mete_data.instruction_counter += strlen(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string) + 1; /* +1 for the \0 */
     }
     else{
-        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".string directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
+        error_line(parsed_line, ".string directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
         return false;
     }
     return true;
@@ -328,9 +331,9 @@ bool insert_entry_or_extern_directive_into_parsed_line_or_error(ParsedLine* pars
     }
     else{
         if(parsed_line->LineTypes.Directive.directive_type == ENTRY)
-            error_line(parsed_line, parsed_line->mete_data.line_counter, *parsed_words_ctr, separated_words.words_counter, ".entry directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
+            error_line(parsed_line, ".entry directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
         else
-            error_line(parsed_line, parsed_line->mete_data.line_counter, *parsed_words_ctr, separated_words.words_counter, ".extern directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
+            error_line(parsed_line, ".extern directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
         return false;
     }
 }
@@ -379,7 +382,7 @@ bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, i
         }
     }
     else{
-        error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, "directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
+        error_line(parsed_line, "directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
         return false;
     }
 }
@@ -406,21 +409,99 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed
     }
     else{
         if(is_the_last_word_in_this_line(*parsed_words_ctr, separated_words.words_counter))
-            error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", "no parameters after label", errors_ptrs);
+            error_line(parsed_line, "label", "no parameters after label", errors_ptrs);
         else
-            error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", label, errors_ptrs);
+            error_line(parsed_line, "label", label, errors_ptrs);
         free(label);
         return false;
     }
     
 }
+bool more_than_one_comma(char* parameters){
+    char* ptr = parameters;
+    int comma_ctr = 0;
+    while(*ptr){
+        if(*ptr == ','){
+            comma_ctr ++;
+            if(comma_ctr >= 2)
+                return false;
+        }
+        ptr++;
+    }
+    return true;
+}
+SeparateLineIntoWords instruction_parameters(char* parameters){
+    SeparateLineIntoWords parsed_parameters;
+    char* parameters_copy = string_copy(parameters);
+    char* parameters_token;
 
-bool check_valid_parameters(char* parameters, AssemblyCommands command){
+    parsed_parameters.words_counter = 0;
+    
+    parameters_token = strtok(parameters_copy, ",");
+    while(parameters_token != NULL){
+        strcpy(parsed_parameters.words[parsed_parameters.words_counter], parameters_token);
+        parsed_parameters.words_counter ++;
+        parameters_token = strtok(NULL, ",");
+    }
+    free(parameters_copy);
+    return parsed_parameters;
+}
 
+bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* parameters, DynamicList *errors_ptrs){
+    
+    AssemblyCommands command = parsed_line->LineTypes.Instruction.command;
+
+    if(ends_with_comma(parameters)){
+        error_line(parsed_line, "instruction", "ends with comma", errors_ptrs);
+        return false;
+    }
+    else if (starts_with_comma(parameters)){
+        error_line(parsed_line, "instruction", "starts with comma", errors_ptrs);
+        return false;
+    }
+    else if (have_sequence_of_commas(parameters)){
+        error_line(parsed_line, "instruction", "have a sequence of commas", errors_ptrs);
+        return false;
+    }
+    else if (more_than_one_comma(parameters)){
+        error_line(parsed_line, "instruction", "too many parameters", errors_ptrs);
+        return false;
+    }
+    
     return true;
 }
 
-bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs){
+typedef enum{
+    IMMEDIATE,
+    DIRECT,
+    DIRECT_REGISTER,
+    INDIRECT_REGISTER
+} AddressingMethod;
+
+bool is_direct(char* parameter){
+    
+}
+
+bool is_immediate(char* parameter){
+    char* ptr = parameter;
+    if(*ptr != '#')
+        return false;
+    ptr ++;
+    return isdigit(ptr);
+}
+
+int get_addressing_methods(char* parameter){
+    /* return the num of addressing method or -1 if its invalid parameter */
+
+}
+
+bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char* error_note){
+    SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
+
+
+}
+
+bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     char* instruction_parameters_in_one_word;
 
     int command_num = is_a_command_and_which(separated_words.words[*parsed_words_ctr]);
@@ -428,10 +509,11 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     
     instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, *parsed_words_ctr);
 
-    if(! check_valid_parameters(instruction_parameters_in_one_word, parsed_line->LineTypes.Instruction.command)){
+    if(!first_check_valid_parameters_or_error_line(parsed_line, instruction_parameters_in_one_word, errors_ptrs)){
         free(instruction_parameters_in_one_word);
         return false;
     }
+
 
     free(instruction_parameters_in_one_word);
     return true;
@@ -464,7 +546,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
             check_validation_and_insert_instruction_parameters(parsed_line, &parsed_words_ctr, symbols_table, separated_words, errors_ptrs, entry_ptrs, external_ptrs);
         }
         else{
-            error_line(parsed_line, counters->line_counter, parsed_words_ctr, separated_words.words_counter, "line", line, errors_ptrs);
+            error_line(parsed_line, "line", line, errors_ptrs);
         }
     }
     
