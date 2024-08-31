@@ -22,23 +22,23 @@
 
 
 static const char *instructions_commands_and_addressing[LEN_OF_COMMANDS_LIST][4] = {
-    /*command, src, dst, group*/
-    {"mov", "123", "0123", "1"},
-    {"cmp", "0123", "0123", "1"},
-    {"add", "123", "0123", "1"},
-    {"sub", "123", "0123", "1"},
-    {"lea", "123", "1", "1"},
-    {"clr", "123", NULL, "2"},
-    {"not", "123", NULL, "2"},
-    {"inc", "123", NULL, "2"},
-    {"dec", "123", NULL, "2"},
-    {"jmp", "12", NULL, "2"},
-    {"bne", "12", NULL, "2"},
-    {"red", "123", NULL, "2"},
-    {"prn", "0123", NULL, "2"},
-    {"jsr", "12", NULL, "2"},
-    {"rts", NULL, NULL, "3"},
-    {"stop", NULL, NULL, "3"}
+    /*command, src, dst, how_many_parameters*/
+    {"mov", "123", "0123", "2"},
+    {"cmp", "0123", "0123", "2"},
+    {"add", "123", "0123", "2"},
+    {"sub", "123", "0123", "2"},
+    {"lea", "123", "1", "2"},
+    {"clr", "123", NULL, "1"},
+    {"not", "123", NULL, "1"},
+    {"inc", "123", NULL, "1"},
+    {"dec", "123", NULL, "1"},
+    {"jmp", "12", NULL, "1"},
+    {"bne", "12", NULL, "1"},
+    {"red", "123", NULL, "1"},
+    {"prn", "0123", NULL, "1"},
+    {"jsr", "12", NULL, "1"},
+    {"rts", NULL, NULL, "0"},
+    {"stop", NULL, NULL, "0"}
 };
 
 static const char* directives_list[LEN_OF_DIRECTIVE_LIST] = {"data", "string", "extern", "entry"};

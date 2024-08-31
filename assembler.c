@@ -516,15 +516,50 @@ bool is_immediate(char* parameter){
     return isdigit(ptr);
 }
 
-int get_addressing_methods(char* parameter){
+int get_addressing_methods(char* parameter, char** error_note){
     /* return the num of addressing method or -1 if its invalid parameter */
-
+    int addressing_method = -1;
+    if(is_immediate(parameter)){
+        addressing_method = IMMEDIATE;
+    }
+    else if (is_direct(parameter)){
+        addressing_method = DIRECT;
+    }
+    else if (is_direct_register(parameter, error_note)){
+        addressing_method = DIRECT_REGISTER;
+    }
+    else if (is_indirect_register(parameter, error_note)){
+        addressing_method = INDIRECT_REGISTER;
+    }
+    return addressing_method;
 }
 
-bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note){
+bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_needed){
+    return (parameters_in_line == how_many_parameters_needed);
+}
+
+bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, int* src, int* dst){
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
 
-
+    /* the number of parameters for a valid command */
+    int how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
+    if(!valid_num_of_parameters(parsed_instruction_parameters.words_counter, how_many_parameters_needed)){
+        *error_note = "instruction with invalid number of parameters";
+        return false;
+    }
+    if(how_many_parameters_needed == 0){
+        return true;
+    }
+    else if (how_many_parameters_needed == 1){
+        *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
+    }
+    else if (how_many_parameters_needed == 2){
+        *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
+        *dst = get_addressing_methods(parsed_instruction_parameters.words[1], error_note);
+    }
+    return false;
+    
+    
 }
 
 bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
