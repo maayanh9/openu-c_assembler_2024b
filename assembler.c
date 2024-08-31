@@ -292,7 +292,7 @@ bool a_duplicate(char* label, DynamicList entry_or_extern_ptrs){
 }
 
 bool duplicate_label_of_extern_or_entry(char* label, DynamicList entry_ptrs, DynamicList external_ptrs){
-    return a_duplicate(label, entry_ptrs) || a_duplicate(label, external_ptrs)
+    return a_duplicate(label, entry_ptrs) || a_duplicate(label, external_ptrs);
 }
 
 bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbols_table, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList entry_ptrs, DynamicList external_ptrs){
