@@ -18,7 +18,7 @@
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
 
-const char *instructions_commands_and_addressing[][3] = {
+static const char *instructions_commands_and_addressing[][3] = {
     {"mov", "123", "0123"},
     {"cmp", "0123", "0123"},
     {"add", "123", "0123"},
