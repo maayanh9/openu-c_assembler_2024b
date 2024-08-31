@@ -219,6 +219,7 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     if(valid_data_num_parameters(data_parameters)){
         if(insert_data_numbers_into_list(parsed_line, data_parameters)){
             parsed_line->mete_data.data_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
+            parsed_line->mete_data.instruction_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements + 1;
         }
         else{
             error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".data directive (too many integers)", data_parameters, errors_ptrs);
@@ -243,6 +244,7 @@ bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, 
         char* ascii_string = separated_words.words[*parsed_words_ctr] + 1; /* the ascii string without the " at the beginning*/
         ascii_string[strlen(ascii_string) - 1] = '\0'; /* cut the " at the end of the string*/
         strcpy(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string, ascii_string);
+        parsed_line->mete_data.instruction_counter += strlen(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string) + 2; /* +2: 1 for \0, 1 for the directive itself*/
     }
     else{
         error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, ".string directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
@@ -382,6 +384,7 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed
     /*Copy the label without the ':' */
     char* label = string_copy(separated_words.words[0]);
     label[strlen(label) - 1] = '\0';
+
     parsed_line->has_label = HAS_LABEL;
     
     if(is_valid_label(label, *symbols_table, *parsed_words_ctr, words_in_line_counter) || (separated_words.words_counter >=2 && ignore_label(separated_words.words[1]))){
