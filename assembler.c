@@ -90,7 +90,7 @@ bool is_a_directive(char* next_unparsed_word){
     return false;
 }
 
-int which_command(char* potential_command){
+int is_a_command_and_which(char* potential_command){
     int i;
     for(i = 0; i < LEN_OF_COMMANDS_LIST; i ++){
         if(strcmp(instructions_commands_and_addressing[i][0], potential_command) == 0){
@@ -375,7 +375,6 @@ bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, i
         if(insert_directive_parameters(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs, entry_ptrs, external_ptrs, *symbols_table))
             return true;
         else{
-            error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, "directive parameters", "inside .data directive", errors_ptrs);
             return false;
         }
     }
@@ -413,6 +412,13 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed
     
 }
 
+bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs){
+
+/**/
+
+}
+
+
 ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_table, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs, ParsedLine *parsed_line){
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
     int parsed_words_ctr = 0;
@@ -431,6 +437,9 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
         if(!check_validation_and_insert_directive_parameters(parsed_line, &parsed_words_ctr, symbols_table, counters->line_counter, separated_words, errors_ptrs, entry_ptrs, external_ptrs)){
             goto finished_parsing_line;
         }
+    }
+    if(is_a_command_and_which(separated_words.words[parsed_words_ctr]) != -1){
+
     }
 
 finished_parsing_line:
