@@ -471,15 +471,41 @@ bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* p
     return true;
 }
 
-/*typedef enum{
+typedef enum{
     IMMEDIATE,
     DIRECT,
     DIRECT_REGISTER,
     INDIRECT_REGISTER
-} AddressingMethod;*/
+} AddressingMethod;
+
+bool is_register(char* parameter, char** error_note){
+    char* ptr = parameter;
+    int i;
+    if(*ptr != 'r')
+        return false;
+    ptr ++;
+    if(isdigit(ptr)){
+        for(i = 0; i < NUM_OF_REGISTERS; i++){
+            if(i == atoi(ptr))
+                return true;
+        }
+        *error_note = "invalid register name";
+    }
+    return false;
+}
+bool is_direct_register(char* parameter, char** error_note){
+    return is_register(parameter, error_note);
+}
+bool is_indirect_register(char* parameter, char** error_note){
+    char* ptr = parameter;
+    if(*ptr != '*')
+        return false;
+    ptr ++;
+    return is_register(ptr, error_note);
+}
 
 bool is_direct(char* parameter){
-
+    return isalnum(parameter);
 }
 
 bool is_immediate(char* parameter){
@@ -495,7 +521,7 @@ int get_addressing_methods(char* parameter){
 
 }
 
-bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char* error_note){
+bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note){
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
 
 
