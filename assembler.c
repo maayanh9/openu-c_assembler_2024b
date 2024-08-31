@@ -274,8 +274,9 @@ bool is_a_dup_label_name(char* label, DynamicList symbols_table){
 }
 
 bool is_valid_label(char* label, DynamicList symbols_table, int parsed_words_ctr, int how_many_words_in_line){
-    if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table) || is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line))
+    if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table) || is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line) || strlen(label) > MAX_LEN_OF_LABEL){
         return false;
+    }
     return true;
 }
 
@@ -377,18 +378,22 @@ bool ignore_label(char* the_word_after_label){
 
 
 bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *symbols_table, int line_counter, int words_in_line_counter, DynamicList *errors_ptrs){
-    char* first_word_in_line = separated_words.words[0];
-    parsed_line->has_label = HAS_LABEL;
+    
     /*Copy the label without the ':' */
-    strncpy(parsed_line->label, first_word_in_line, strlen(first_word_in_line) - 1);
-    (*parsed_line).label[strlen(first_word_in_line) - 1] = '\0';
-    (*parsed_words_ctr) ++;
-    if(is_valid_label(parsed_line->label, *symbols_table, *parsed_words_ctr, words_in_line_counter) || (separated_words.words_counter >=2 && ignore_label(separated_words.words[1]))){
+    char* label = string_copy(separated_words.words[0]);
+    label[strlen(label) - 1] = '\0';
+    parsed_line->has_label = HAS_LABEL;
+    
+    if(is_valid_label(label, *symbols_table, *parsed_words_ctr, words_in_line_counter) || (separated_words.words_counter >=2 && ignore_label(separated_words.words[1]))){
+        strcpy(parsed_line->label, label);
+        (*parsed_words_ctr) ++;
         insert_new_cell_into_dynamic_list(symbols_table, parsed_line);
+        free(label);
         return true;
     }
     else{
-        error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", parsed_line->label, errors_ptrs);
+        error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", label, errors_ptrs);
+        free(label);
         return false;
     }
     
