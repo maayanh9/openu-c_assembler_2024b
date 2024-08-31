@@ -90,9 +90,20 @@ bool is_a_directive(char* next_unparsed_word){
     return false;
 }
 
-int which_directive(char* next_unparsed_word){
+int which_command(char* potential_command){
+    int i;
+    for(i = 0; i < LEN_OF_COMMANDS_LIST; i ++){
+        if(strcmp(instructions_commands_and_addressing[i][0], potential_command) == 0){
+            return i;
+        }
+    }
+    return -1;
+}
+
+int which_directive(char* potential_directive){
+    /* return the directive num from AssemblyDirective enum if it is a valid directive or -1 if it is not there*/
     /*directive is the string after the '.' */
-    char * directive = next_unparsed_word + sizeof(char);
+    char * directive = potential_directive + sizeof(char);
     int i;
     for(i = 0; i < LEN_OF_DIRECTIVE_LIST; i++){
         if(strcmp(directives_list[i], directive) == 0){
@@ -364,7 +375,7 @@ bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, i
         if(insert_directive_parameters(parsed_line, parsed_words_ctr, line_counter, separated_words, errors_ptrs, entry_ptrs, external_ptrs, *symbols_table))
             return true;
         else{
-            /** TODO: error line  */
+            error_line(parsed_line, line_counter, *parsed_words_ctr, separated_words.words_counter, "directive parameters", "inside .data directive", errors_ptrs);
             return false;
         }
     }
@@ -417,7 +428,9 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
         }
     }
     if(is_a_directive(separated_words.words[parsed_words_ctr])){
-        check_validation_and_insert_directive_parameters(parsed_line, &parsed_words_ctr, symbols_table, counters->line_counter, separated_words, errors_ptrs, entry_ptrs, external_ptrs);
+        if(!check_validation_and_insert_directive_parameters(parsed_line, &parsed_words_ctr, symbols_table, counters->line_counter, separated_words, errors_ptrs, entry_ptrs, external_ptrs)){
+            goto finished_parsing_line;
+        }
     }
 
 finished_parsing_line:

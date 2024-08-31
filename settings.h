@@ -11,6 +11,7 @@
 #define MAX_LEN_OF_LABEL 31
 
 #define LEN_OF_DIRECTIVE_LIST 4
+#define LEN_OF_COMMANDS_LIST 16
 
 #define FILE_EXTENTION_PREPROCESSOR ".am"
 #define FILE_EXTENTION_INPUT_ASSEMBLER_FILE ".as"
@@ -18,7 +19,7 @@
 #define FILE_EXTENTION_EXTERNAL_FILE ".ext"
 
 
-static const char *instructions_commands_and_addressing[][3] = {
+static const char *instructions_commands_and_addressing[LEN_OF_COMMANDS_LIST][3] = {
     {"mov", "123", "0123"},
     {"cmp", "0123", "0123"},
     {"add", "123", "0123"},
