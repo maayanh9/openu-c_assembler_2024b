@@ -476,7 +476,7 @@ bool is_register(char* parameter, char** error_note){
     if(*ptr != 'r')
         return false;
     ptr ++;
-    if(isdigit(ptr)){
+    if(strlen(ptr) == 1 && isdigit(*ptr)){
         for(i = 0; i < NUM_OF_REGISTERS; i++){
             if(i == atoi(ptr))
                 return true;
@@ -497,7 +497,7 @@ bool is_indirect_register(char* parameter, char** error_note){
 }
 
 bool is_direct(char* parameter){
-    return isalnum(parameter);
+    return string_contains_only_letters_and_numbers(parameter);
 }
 
 bool is_immediate(char* parameter){
@@ -593,16 +593,17 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
     return false;
 }
 
-bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
+bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     char* instruction_parameters_in_one_word;
     char *error_note = NULL;
     int source_parameter;
     int destination_parameter;
 
-    int command_num = is_a_command_and_which(separated_words.words[*parsed_words_ctr]);
+    int command_num = is_a_command_and_which(separated_words.words[parsed_words_ctr]);
     parsed_line->LineTypes.Instruction.command = command_num;
+    parsed_words_ctr ++;
     
-    instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, *parsed_words_ctr);
+    instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, parsed_words_ctr);
 
     if(!first_check_valid_parameters_or_error_line(parsed_line, instruction_parameters_in_one_word, errors_ptrs)){
         free(instruction_parameters_in_one_word);
@@ -614,7 +615,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
             error_line(parsed_line, "instuction", error_note, errors_ptrs);
         }
         else{
-            error_line(parsed_line, "instuction", instruction_parameters_in_one_word, errors_ptrs);
+            error_line(parsed_line, "instuction parameters", instruction_parameters_in_one_word, errors_ptrs);
         }
         free(instruction_parameters_in_one_word);
         return false;
@@ -649,7 +650,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
     /*command or invalid data*/
     else{
         if(is_a_command_and_which(separated_words.words[parsed_words_ctr]) != -1){
-            check_validation_and_insert_instruction_parameters(parsed_line, &parsed_words_ctr, symbols_table, separated_words, errors_ptrs);
+            check_validation_and_insert_instruction_parameters(parsed_line, parsed_words_ctr, symbols_table, separated_words, errors_ptrs);
         }
         else{
             error_line(parsed_line, "line", line, errors_ptrs);
