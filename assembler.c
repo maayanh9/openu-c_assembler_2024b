@@ -279,23 +279,20 @@ bool is_valid_label(char* label, DynamicList symbols_table, int parsed_words_ctr
     return true;
 }
 
-bool not_a_duplicate_label_of_extern_or_entry(char* label, DynamicList entry_ptrs, DynamicList external_ptrs){
+bool a_duplicate(char* label, DynamicList entry_or_extern_ptrs){
     int i;
-    for(i = 0; i < entry_ptrs.list_length; i++){
-        ParsedLine* parsed_line = (ParsedLine*)entry_ptrs.items[i];
-        
-        if(strcmp(label, parsed_line->LineTypes.Directive.DirectiveTypes.entry_or_extern) == 0){
-            return true;
-        }
-    }
-    for(i = 0; i < external_ptrs.list_length; i++){
-        ParsedLine* parsed_line = (ParsedLine*)external_ptrs.items[i];
+    for(i = 0; i < entry_or_extern_ptrs.list_length; i++){
+        ParsedLine* parsed_line = (ParsedLine*)entry_or_extern_ptrs.items[i];
         
         if(strcmp(label, parsed_line->LineTypes.Directive.DirectiveTypes.entry_or_extern) == 0){
             return true;
         }
     }
     return false;
+}
+
+bool duplicate_label_of_extern_or_entry(char* label, DynamicList entry_ptrs, DynamicList external_ptrs){
+    return a_duplicate(label, entry_ptrs) || a_duplicate(label, external_ptrs)
 }
 
 bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbols_table, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList entry_ptrs, DynamicList external_ptrs){
@@ -307,7 +304,7 @@ bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbol
         }
     }
     return !is_the_last_word_in_this_line(parsed_words_ctr, separated_words.words_counter) && (string_contains_only_letters_and_numbers(separated_words.words[parsed_words_ctr + 1]))
-                && not_a_duplicate_label_of_extern_or_entry(separated_words.words[parsed_words_ctr + 1], entry_ptrs, external_ptrs);
+                && !duplicate_label_of_extern_or_entry(separated_words.words[parsed_words_ctr + 1], entry_ptrs, external_ptrs);
 }
 
 bool insert_entry_or_extern_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList symbols_table, DynamicList entry_ptrs, DynamicList external_ptrs){
@@ -373,7 +370,6 @@ bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, i
         return false;
     }
 }
-
 
 bool ignore_label(char* the_word_after_label){
     return (strcmp(the_word_after_label, ".extern") == 0 || strcmp(the_word_after_label, ".entry") == 0);
