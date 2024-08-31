@@ -439,7 +439,7 @@ SeparateLineIntoWords instruction_parameters(char* parameters){
     
     parameters_token = strtok(parameters_copy, ",");
     while(parameters_token != NULL){
-        strcpy(parsed_parameters.words[parsed_parameters.words_counter], parameters_token);
+        parsed_parameters.words[parsed_parameters.words_counter] = string_copy(parameters_token);
         parsed_parameters.words_counter ++;
         parameters_token = strtok(NULL, ",");
     }
