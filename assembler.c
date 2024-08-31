@@ -539,7 +539,16 @@ bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_nee
 }
 
 bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, int* src, int* dst){
+    /* change also the addressing methods (the values in src and dst):
+                    initialize them to NULL 
+                    if they are in use, the function change them:
+                        for valid addressing method - the number of the addressing method
+                        for invalid methods -1
+        and the error note if the parameters are invalid*/
+
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
+    *src = NULL;
+    *dst = NULL;
 
     /* the number of parameters for a valid command */
     int how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
@@ -574,6 +583,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
         free(instruction_parameters_in_one_word);
         return false;
     }
+
 
 
     free(instruction_parameters_in_one_word);
