@@ -191,16 +191,16 @@ bool valid_data_num_parameters(char* data_parameters){
     && does_not_have_sequence_of_commas(data_parameters) && have_plus_or_minus_only_after_comma(data_parameters);
 }
 
-char* connect_data_separate_words(SeparateLineIntoWords separated_words, int parsed_words_ctr){
-    /*Connect again the separate words of the .data parameters for easier parse*/
-    char* data_parameters = (char*)malloc(sizeof(char) * (MAX_LEN_LINE_ASSEMBLY_FILE - 5));
-    int connected_words_counter = parsed_words_ctr;
-    *data_parameters = '\0';
-    while (separated_words.words_counter > connected_words_counter){
-        strcat(data_parameters, separated_words.words[connected_words_counter]);
-        connected_words_counter ++;
+char* connect_unparsed_separate_strings(SeparateLineIntoWords separated_words, int parsed_words_ctr){
+    /*Connect again the separate words easier parse*/
+    char* connected_string = (char*)malloc(sizeof(char) * (MAX_LEN_LINE_ASSEMBLY_FILE));
+    int connected_strings_counter = parsed_words_ctr;
+    *connected_string = '\0';
+    while (separated_words.words_counter > connected_strings_counter){
+        strcat(connected_string, separated_words.words[connected_strings_counter]);
+        connected_strings_counter ++;
     }
-    return data_parameters;
+    return connected_string;
 }
 
 bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameters){
@@ -225,7 +225,7 @@ bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameter
 bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     /* parse the .data parameters (check if its valid) 
     and insert it into the parsed_line struct*/
-    char *data_parameters = connect_data_separate_words(separated_words, *parsed_words_ctr);
+    char *data_parameters = connect_unparsed_separate_strings(separated_words, *parsed_words_ctr);
     bool answer = true;
     if(valid_data_num_parameters(data_parameters)){
         if(insert_data_numbers_into_list(parsed_line, data_parameters)){
@@ -405,17 +405,36 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed
         return true;
     }
     else{
-        error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", label, errors_ptrs);
+        if(is_the_last_word_in_this_line(*parsed_words_ctr, separated_words.words_counter))
+            error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", "no parameters after label", errors_ptrs);
+        else
+            error_line(parsed_line, line_counter, *parsed_words_ctr, words_in_line_counter, "label", label, errors_ptrs);
         free(label);
         return false;
     }
     
 }
 
-bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs){
+bool check_valid_parameters(char* parameters, AssemblyCommands command){
 
-/**/
+    return true;
+}
 
+bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs){
+    char* instruction_parameters_in_one_word;
+
+    int command_num = is_a_command_and_which(separated_words.words[*parsed_words_ctr]);
+    parsed_line->LineTypes.Instruction.command = command_num;
+    
+    instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, *parsed_words_ctr);
+
+    if(! check_valid_parameters(instruction_parameters_in_one_word, parsed_line->LineTypes.Instruction.command)){
+        free(instruction_parameters_in_one_word);
+        return false;
+    }
+
+    free(instruction_parameters_in_one_word);
+    return true;
 }
 
 
@@ -433,14 +452,22 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
             goto finished_parsing_line;
         }
     }
+
     if(is_a_directive(separated_words.words[parsed_words_ctr])){
         if(!check_validation_and_insert_directive_parameters(parsed_line, &parsed_words_ctr, symbols_table, counters->line_counter, separated_words, errors_ptrs, entry_ptrs, external_ptrs)){
             goto finished_parsing_line;
         }
     }
-    if(is_a_command_and_which(separated_words.words[parsed_words_ctr]) != -1){
-
+    /*command or invalid data*/
+    else{
+        if(is_a_command_and_which(separated_words.words[parsed_words_ctr]) != -1){
+            check_validation_and_insert_instruction_parameters(parsed_line, &parsed_words_ctr, symbols_table, separated_words, errors_ptrs, entry_ptrs, external_ptrs);
+        }
+        else{
+            error_line(parsed_line, counters->line_counter, parsed_words_ctr, separated_words.words_counter, "line", line, errors_ptrs);
+        }
     }
+    
 
 finished_parsing_line:
     counters->instruction_counter = parsed_line->mete_data.instruction_counter;
