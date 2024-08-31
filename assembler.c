@@ -505,7 +505,19 @@ bool is_immediate(char* parameter){
     if(*ptr != '#')
         return false;
     ptr ++;
-    return isdigit(ptr);
+    if(!isdigit(*ptr)){
+        return false;
+    }
+    ptr ++;
+    while (*ptr)
+    {
+        if(!isdigit(*ptr)){
+            return false;
+        }
+        ptr ++;
+    }
+    
+    return true;
 }
 
 int get_addressing_methods(char* parameter, char** error_note){
