@@ -424,11 +424,11 @@ bool more_than_one_comma(char* parameters){
         if(*ptr == ','){
             comma_ctr ++;
             if(comma_ctr >= 2)
-                return false;
+                return true;
         }
         ptr++;
     }
-    return true;
+    return false;
 }
 SeparateLineIntoWords instruction_parameters(char* parameters){
     SeparateLineIntoWords parsed_parameters;
