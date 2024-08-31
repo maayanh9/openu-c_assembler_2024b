@@ -536,7 +536,7 @@ typedef enum{
 }SourceOrDest;
 
 bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_dest, AddressingMethod addressing_method, char** error_note){
-    char* valid_addressing_ptr = instructions_commands_and_addressing[command][src_or_dest];
+    const char* valid_addressing_ptr = instructions_commands_and_addressing[command][src_or_dest];
     while (*valid_addressing_ptr){
         if(atoi(valid_addressing_ptr) == addressing_method){
             return true;
@@ -554,19 +554,20 @@ bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_
 
 bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, int* src, int* dst){
     /* change also the addressing methods (the values in src and dst):
-                    initialize them to NULL 
+                    initialize them to -2 (will stay -2 only if there is no use of them) 
                     if they are in use, the function change them:
                         for valid addressing method - the number of the addressing method
                         for invalid methods -1
         and the error note if the parameters are invalid*/
 
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
+    int how_many_parameters_needed;
 
-    *src = NULL;
-    *dst = NULL;
+    *src = -2;
+    *dst = -2;
 
     /* the number of parameters for a valid command */
-    int how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
+    how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
     if(!valid_num_of_parameters(parsed_instruction_parameters.words_counter, how_many_parameters_needed)){
         *error_note = "instruction with invalid number of parameters";
         return false;
@@ -589,6 +590,9 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
 
 bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     char* instruction_parameters_in_one_word;
+    char *error_note = NULL;
+    int source_parameter;
+    int destination_parameter;
 
     int command_num = is_a_command_and_which(separated_words.words[*parsed_words_ctr]);
     parsed_line->LineTypes.Instruction.command = command_num;
@@ -598,13 +602,10 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     if(!first_check_valid_parameters_or_error_line(parsed_line, instruction_parameters_in_one_word, errors_ptrs)){
         free(instruction_parameters_in_one_word);
         return false;
-    }
-    char *error_note = NULL;
-    int source_parameter;
-    int destination_parameter;
+    }    
 
     if(!is_valid_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter)){
-        if(*error_note != NULL){
+        if(error_note != NULL){
             error_line(parsed_line, "instuction", error_note, errors_ptrs);
         }
         else{
@@ -623,6 +624,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
     int parsed_words_ctr = 0;
     parsed_line->mete_data.instruction_counter = counters->instruction_counter;
+    parsed_line->mete_data.line_counter = counters->line_counter;
     if (is_comment_or_empty_line(separated_words)){
         parsed_line->line_type = EMPTY_OR_COMMENT_LINE;
         goto finished_parsing_line;
@@ -642,7 +644,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
     /*command or invalid data*/
     else{
         if(is_a_command_and_which(separated_words.words[parsed_words_ctr]) != -1){
-            check_validation_and_insert_instruction_parameters(parsed_line, &parsed_words_ctr, symbols_table, separated_words, errors_ptrs, entry_ptrs, external_ptrs);
+            check_validation_and_insert_instruction_parameters(parsed_line, &parsed_words_ctr, symbols_table, separated_words, errors_ptrs);
         }
         else{
             error_line(parsed_line, "line", line, errors_ptrs);
