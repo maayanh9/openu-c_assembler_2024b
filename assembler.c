@@ -570,21 +570,26 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
     how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
     if(!valid_num_of_parameters(parsed_instruction_parameters.words_counter, how_many_parameters_needed)){
         *error_note = "instruction with invalid number of parameters";
+        free_separate_line(&parsed_instruction_parameters);
         return false;
     }
     if(how_many_parameters_needed == 0){
+        free_separate_line(&parsed_instruction_parameters);
         return true;
     }
     else if (how_many_parameters_needed == 1){
         *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
+        free_separate_line(&parsed_instruction_parameters);
         return (*src != -1) && valid_addressing_per_command(command, SOURCE, *src, error_note);
     }
     else if (how_many_parameters_needed == 2){
         *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
         *dst = get_addressing_methods(parsed_instruction_parameters.words[1], error_note);
+        free_separate_line(&parsed_instruction_parameters);
         return (*src != -1) && (*dst != -1) && valid_addressing_per_command(command, SOURCE, *src, error_note)
                                             && valid_addressing_per_command(command, DESTINATION, *dst, error_note);
     }
+    free_separate_line(&parsed_instruction_parameters);
     return false;
 }
 
