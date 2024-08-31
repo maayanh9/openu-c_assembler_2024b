@@ -448,8 +448,6 @@ SeparateLineIntoWords instruction_parameters(char* parameters){
 }
 
 bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* parameters, DynamicList *errors_ptrs){
-    
-    AssemblyCommands command = parsed_line->LineTypes.Instruction.command;
 
     if(ends_with_comma(parameters)){
         error_line(parsed_line, "instruction", "ends with comma", errors_ptrs);
@@ -471,12 +469,6 @@ bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* p
     return true;
 }
 
-typedef enum{
-    IMMEDIATE,
-    DIRECT,
-    DIRECT_REGISTER,
-    INDIRECT_REGISTER
-} AddressingMethod;
 
 bool is_register(char* parameter, char** error_note){
     char* ptr = parameter;
@@ -538,6 +530,28 @@ bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_nee
     return (parameters_in_line == how_many_parameters_needed);
 }
 
+typedef enum{
+    SOURCE = 1,
+    DESTINATION
+}SourceOrDest;
+
+bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_dest, AddressingMethod addressing_method, char** error_note){
+    char* valid_addressing_ptr = instructions_commands_and_addressing[command][src_or_dest];
+    while (*valid_addressing_ptr){
+        if(atoi(valid_addressing_ptr) == addressing_method){
+            return true;
+        }
+        valid_addressing_ptr ++;
+    }
+    if(src_or_dest == SOURCE){
+        *error_note = "invalid addressing method at SRC";
+    }
+    else{
+        *error_note = "invalid addressing method at DST";
+    }
+    return false;
+}
+
 bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, int* src, int* dst){
     /* change also the addressing methods (the values in src and dst):
                     initialize them to NULL 
@@ -547,6 +561,7 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
         and the error note if the parameters are invalid*/
 
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
+
     *src = NULL;
     *dst = NULL;
 
@@ -561,12 +576,13 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
     }
     else if (how_many_parameters_needed == 1){
         *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
-        return (*src != -1);
+        return (*src != -1) && valid_addressing_per_command(command, SOURCE, *src, error_note);
     }
     else if (how_many_parameters_needed == 2){
         *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
         *dst = get_addressing_methods(parsed_instruction_parameters.words[1], error_note);
-        return (*src != -1) && (*dst != -1);
+        return (*src != -1) && (*dst != -1) && valid_addressing_per_command(command, SOURCE, *src, error_note)
+                                            && valid_addressing_per_command(command, DESTINATION, *dst, error_note);
     }
     return false;
 }
@@ -583,8 +599,20 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
         free(instruction_parameters_in_one_word);
         return false;
     }
+    char *error_note = NULL;
+    int source_parameter;
+    int destination_parameter;
 
-
+    if(!is_valid_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter)){
+        if(*error_note != NULL){
+            error_line(parsed_line, "instuction", error_note, errors_ptrs);
+        }
+        else{
+            error_line(parsed_line, "instuction", instruction_parameters_in_one_word, errors_ptrs);
+        }
+        free(instruction_parameters_in_one_word);
+        return false;
+    }
 
     free(instruction_parameters_in_one_word);
     return true;
