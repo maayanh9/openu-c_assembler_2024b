@@ -633,11 +633,16 @@ bool validation_check_and_insertion_addressing_methods(char* parameters, Assembl
 void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, InstructionParameter src, InstructionParameter dst, int command_num, int num_of_parameters){
     int src_addressing_method;
     int dst_addressing_method;
+
     parsed_line->LineTypes.Instruction.command = command_num;
     parsed_line->LineTypes.Instruction.source = src;
     parsed_line->LineTypes.Instruction.dest = dst;
+
     src_addressing_method = parsed_line->LineTypes.Instruction.source.addressing_method;
     dst_addressing_method = parsed_line->LineTypes.Instruction.dest.addressing_method;
+
+    parsed_line->mete_data.space_to_keep_for_current_line = 1;
+
     if((src_addressing_method == INDIRECT_REGISTER || src_addressing_method == DIRECT_REGISTER) &&
         (dst_addressing_method == INDIRECT_REGISTER || dst_addressing_method == DIRECT_REGISTER)){
             parsed_line->mete_data.space_to_keep_for_current_line ++;
@@ -748,10 +753,15 @@ bool first_pass(const char *input_file_name){
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
-        counters.instruction_counter += counters.space_to_keep_for_current_line + 1;
         CHECK_ALLOCATION(parsed_line);
+
+        counters.instruction_counter += counters.space_to_keep_for_current_line;
+
         parse_line(line, &counters, &symbols_table, &errors_ptrs, &entry_ptrs, &external_ptrs, parsed_line);
         counters.line_counter ++;
+
+        counters.instruction_counter += parsed_line->mete_data.space_to_keep_for_current_line;
+
         printf("%d\t", parsed_line->mete_data.instruction_counter);
         insert_new_cell_into_dynamic_list(&parsed_lines_list, parsed_line);
         parsed_lines_list.is_allocated = true;
