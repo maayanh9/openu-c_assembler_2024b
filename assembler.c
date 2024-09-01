@@ -213,7 +213,6 @@ bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameter
     parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements = 0;
     while (data_numbers_token){
         next_num = atoi(data_numbers_token);
-        printf("%d\t", next_num);
         parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers[array_num_counter] = next_num;
         parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements++;
         array_num_counter++;
@@ -233,7 +232,7 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     if(valid_data_num_parameters(data_parameters)){
         if(insert_data_numbers_into_list(parsed_line, data_parameters)){
             parsed_line->mete_data.data_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
-            parsed_line->mete_data.instruction_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
+            parsed_line->mete_data.space_to_keep_for_current_line += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
         }
         else{
             error_line(parsed_line, ".data directive (too many integers)", data_parameters, errors_ptrs);
@@ -258,7 +257,7 @@ bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, 
         char* ascii_string = separated_words.words[*parsed_words_ctr] + 1; /* the ascii string without the " at the beginning*/
         ascii_string[strlen(ascii_string) - 1] = '\0'; /* cut the " at the end of the string*/
         strcpy(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string, ascii_string);
-        parsed_line->mete_data.instruction_counter += strlen(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string) + 1; /* +1 for the \0 */
+        parsed_line->mete_data.space_to_keep_for_current_line += strlen(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string) + 1; /* +1 for the \0 */
     }
     else{
         error_line(parsed_line, ".string directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
@@ -600,29 +599,28 @@ bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_
     return false;
 }
 
-bool validation_check_and_insertion_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, InstructionParameter* src, InstructionParameter* dst){
+bool validation_check_and_insertion_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, InstructionParameter* src, InstructionParameter* dst, int* num_of_parameters){
 
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
-    int how_many_parameters_needed;
 
 
     /* the number of parameters for a valid command */
-    how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
-    if(!valid_num_of_parameters(parsed_instruction_parameters.words_counter, how_many_parameters_needed)){
+    *num_of_parameters = atoi(instructions_commands_and_addressing[command][3]);
+    if(!valid_num_of_parameters(parsed_instruction_parameters.words_counter, *num_of_parameters)){
         *error_note = "instruction with invalid number of parameters";
         free_separate_line(&parsed_instruction_parameters);
         return false;
     }
-    if(how_many_parameters_needed == 0){
+    if(*num_of_parameters == 0){
         free_separate_line(&parsed_instruction_parameters);
         return true;
     }
-    else if (how_many_parameters_needed == 1){
+    else if (*num_of_parameters == 1){
         get_addressing_methods(parsed_instruction_parameters.words[0], error_note, dst);
         free_separate_line(&parsed_instruction_parameters);
         return valid_addressing_per_command(command, DESTINATION, dst->addressing_method, error_note);
     }
-    else if (how_many_parameters_needed == 2){
+    else if (*num_of_parameters == 2){
         get_addressing_methods(parsed_instruction_parameters.words[0], error_note, src);
         get_addressing_methods(parsed_instruction_parameters.words[1], error_note, dst);
         free_separate_line(&parsed_instruction_parameters);
@@ -632,10 +630,21 @@ bool validation_check_and_insertion_addressing_methods(char* parameters, Assembl
     free_separate_line(&parsed_instruction_parameters);
     return false;
 }
-void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, InstructionParameter src, InstructionParameter dst, int command_num){
+void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, InstructionParameter src, InstructionParameter dst, int command_num, int num_of_parameters){
+    int src_addressing_method;
+    int dst_addressing_method;
     parsed_line->LineTypes.Instruction.command = command_num;
     parsed_line->LineTypes.Instruction.source = src;
     parsed_line->LineTypes.Instruction.dest = dst;
+    src_addressing_method = parsed_line->LineTypes.Instruction.source.addressing_method;
+    dst_addressing_method = parsed_line->LineTypes.Instruction.dest.addressing_method;
+    if((src_addressing_method == INDIRECT_REGISTER || src_addressing_method == DIRECT_REGISTER) &&
+        (dst_addressing_method == INDIRECT_REGISTER || dst_addressing_method == DIRECT_REGISTER)){
+            parsed_line->mete_data.space_to_keep_for_current_line ++;
+        }
+    else{
+        parsed_line->mete_data.space_to_keep_for_current_line += num_of_parameters;
+    }
 }
 
 
@@ -644,6 +653,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     char *error_note = NULL;
     InstructionParameter source_parameter;
     InstructionParameter destination_parameter;
+    int num_of_parameters;
 
     int command_num = is_a_command_and_which(separated_words.words[parsed_words_ctr]);
     
@@ -652,7 +662,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, parsed_words_ctr);
 
 
-    if(!validation_check_and_insertion_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter)){
+    if(!validation_check_and_insertion_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter, &num_of_parameters)){
         if(error_note != NULL){
             error_line(parsed_line, "instuction", error_note, errors_ptrs);
         }
@@ -663,7 +673,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
         return false;
     }
 
-    insert_instruction_parameters_to_the_parsed_line(parsed_line, source_parameter, destination_parameter, command_num);
+    insert_instruction_parameters_to_the_parsed_line(parsed_line, source_parameter, destination_parameter, command_num, num_of_parameters);
 
     free(instruction_parameters_in_one_word);
     return true;
@@ -675,6 +685,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
     int parsed_words_ctr = 0;
     parsed_line->mete_data.instruction_counter = counters->instruction_counter;
     parsed_line->mete_data.line_counter = counters->line_counter;
+    parsed_line->mete_data.space_to_keep_for_current_line = 0;
     if (is_comment_or_empty_line(separated_words)){
         parsed_line->line_type = EMPTY_OR_COMMENT_LINE;
         goto finished_parsing_line;
@@ -704,6 +715,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
 
 finished_parsing_line:
     counters->instruction_counter = parsed_line->mete_data.instruction_counter;
+    counters->space_to_keep_for_current_line = parsed_line->mete_data.space_to_keep_for_current_line;
     free_separate_line(&separated_words);
     return parsed_line;
 }
@@ -726,6 +738,7 @@ bool first_pass(const char *input_file_name){
     initialize_dynamic_list(&external_ptrs, sizeof(ParsedLine *));
 
     counters.instruction_counter = 100;
+    counters.space_to_keep_for_current_line = -1;
     counters.line_counter = 1;
 
     if(!check_if_file_opened_successfully(input_file)){
@@ -735,6 +748,7 @@ bool first_pass(const char *input_file_name){
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
+        counters.instruction_counter += counters.space_to_keep_for_current_line + 1;
         CHECK_ALLOCATION(parsed_line);
         parse_line(line, &counters, &symbols_table, &errors_ptrs, &entry_ptrs, &external_ptrs, parsed_line);
         counters.line_counter ++;

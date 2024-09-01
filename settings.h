@@ -54,6 +54,7 @@ typedef struct Node{
 typedef struct LineMetaData{
     int data_counter;
     int instruction_counter;
+    int space_to_keep_for_current_line;
     int line_counter;
 }LineMetaData;
 
