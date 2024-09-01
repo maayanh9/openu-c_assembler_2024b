@@ -549,11 +549,13 @@ typedef enum{
 
 bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_dest, AddressingMethod addressing_method, char** error_note){
     const char* valid_addressing_ptr = instructions_commands_and_addressing[command][src_or_dest];
+    int valid_addressing_method = (AddressingMethod)(*valid_addressing_ptr - '0');
     while (*valid_addressing_ptr){
-        if((AddressingMethod)atoi(valid_addressing_ptr) == addressing_method){
+        if(valid_addressing_method == addressing_method){
             return true;
         }
         valid_addressing_ptr ++;
+        valid_addressing_method = (AddressingMethod)(*valid_addressing_ptr - '0');
     }
     if(src_or_dest == SOURCE){
         *error_note = "invalid addressing method at SRC";
