@@ -22,7 +22,7 @@
 
 
 static const char *instructions_commands_and_addressing[LEN_OF_COMMANDS_LIST][4] = {
-    /*command, src, dst, how_many_parameters*/
+    /*command, dst, src, how_many_parameters*/
     {"mov", "123", "0123", "2"},
     {"cmp", "0123", "0123", "2"},
     {"add", "123", "0123", "2"},
@@ -100,22 +100,23 @@ typedef enum{
     IMMEDIATE,
     DIRECT,
     DIRECT_REGISTER,
-    INDIRECT_REGISTER
+    INDIRECT_REGISTER,
+    INVALID_OR_NOT_IN_USE = -1
 } AddressingMethod;
 
-typedef struct InstructionParameters{
+typedef struct InstructionParameter{
     AddressingMethod addressing_method;
     union Addressing
     {
         int immediate;
         struct{
             int label_counter;
-            int direct;
+            char direct[MAX_LEN_OF_LABEL];
         } Direct;
         int register_num;
     } Addressing;
     
-} InstructionParameters;
+} InstructionParameter;
 
 typedef struct ParsedLine{
     LineMetaData mete_data;
@@ -135,8 +136,8 @@ typedef struct ParsedLine{
         } Directive;
         struct {
             AssemblyCommands command;
-            InstructionParameters source;
-            InstructionParameters dest;
+            InstructionParameter source;
+            InstructionParameter dest;
         } Instruction;
         
     }LineTypes;

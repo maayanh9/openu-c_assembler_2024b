@@ -470,28 +470,30 @@ bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* p
 }
 
 
-bool is_register(char* parameter, char** error_note){
+int is_register(char* parameter, char** error_note){
+    /* -1 for invalid register name, -2 for not a register*/
     char* ptr = parameter;
     int i;
     if(*ptr != 'r')
-        return false;
+        return -2;
     ptr ++;
     if(strlen(ptr) == 1 && isdigit(*ptr)){
         for(i = 0; i < NUM_OF_REGISTERS; i++){
             if(i == atoi(ptr))
-                return true;
+                return i;
         }
-        *error_note = "invalid register name";
+        *error_note = "invalid register name"; /* happened for r8, r9 registers, and assume r10 and bigger are label and not a register*/
+        return -1;
     }
-    return false;
+    return -2;
 }
-bool is_direct_register(char* parameter, char** error_note){
+int is_direct_register(char* parameter, char** error_note){
     return is_register(parameter, error_note);
 }
-bool is_indirect_register(char* parameter, char** error_note){
+int is_indirect_register(char* parameter, char** error_note){
     char* ptr = parameter;
     if(*ptr != '*')
-        return false;
+        return -2;
     ptr ++;
     return is_register(ptr, error_note);
 }
@@ -505,6 +507,11 @@ bool is_immediate(char* parameter){
     if(*ptr != '#')
         return false;
     ptr ++;
+
+    if(*ptr == '+' || *ptr == '-'){
+        ptr ++;
+    }
+
     if(!isdigit(*ptr)){
         return false;
     }
@@ -519,23 +526,50 @@ bool is_immediate(char* parameter){
     
     return true;
 }
+int export_immediate_num(char* parameter){
+    char* ptr = parameter;
+    if(*ptr != '#')
+        return false;
+    ptr ++;
 
-int get_addressing_methods(char* parameter, char** error_note){
-    /* return the num of addressing method or -1 if its invalid parameter */
-    int addressing_method = -1;
+    if(*ptr == '+'){
+        ptr ++;
+    }
+    return atoi(ptr);
+}
+
+bool get_addressing_methods(char* parameter, char** error_note, InstructionParameter *addressing_parameters){
+    int direct_register_result = is_direct_register(parameter, error_note);
+    int indirect_register_result = is_indirect_register(parameter, error_note);
     if(is_immediate(parameter)){
-        addressing_method = IMMEDIATE;
+        addressing_parameters->addressing_method = IMMEDIATE;
+        addressing_parameters->Addressing.immediate = export_immediate_num(parameter);
+        return true;
     }
-    else if (is_direct_register(parameter, error_note)){
-        addressing_method = DIRECT_REGISTER;
+    else if (direct_register_result != -2){
+        if(direct_register_result == -1){
+            addressing_parameters->addressing_method = INVALID_OR_NOT_IN_USE;
+        }
+        else{
+            addressing_parameters->addressing_method = DIRECT_REGISTER;}
+        addressing_parameters->Addressing.register_num = direct_register_result;
+        return true;
     }
-    else if (is_indirect_register(parameter, error_note)){
-        addressing_method = INDIRECT_REGISTER;
+    else if (indirect_register_result != -2){
+        if(indirect_register_result == -1){
+            addressing_parameters->addressing_method = INVALID_OR_NOT_IN_USE;
+        }
+        else{
+            addressing_parameters->addressing_method = INDIRECT_REGISTER;}
+        addressing_parameters->Addressing.register_num = indirect_register_result;
+        return true;
     }
     else if (is_direct(parameter)){
-        addressing_method = DIRECT;
+        addressing_parameters->addressing_method = DIRECT;
+        strcpy(addressing_parameters->Addressing.Direct.direct, parameter);
+        return true;
     }
-    return addressing_method;
+    return false;
 }
 
 bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_needed){
@@ -543,8 +577,8 @@ bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_nee
 }
 
 typedef enum{
-    SOURCE = 1,
-    DESTINATION
+    DESTINATION = 1,
+    SOURCE
 }SourceOrDest;
 
 bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_dest, AddressingMethod addressing_method, char** error_note){
@@ -557,28 +591,20 @@ bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_
         valid_addressing_ptr ++;
         valid_addressing_method = (AddressingMethod)(*valid_addressing_ptr - '0');
     }
-    if(src_or_dest == SOURCE){
+    if(src_or_dest == SOURCE && !*error_note){
         *error_note = "invalid addressing method at SRC";
     }
-    else{
+    else if (src_or_dest == DESTINATION && !*error_note){
         *error_note = "invalid addressing method at DST";
     }
     return false;
 }
 
-bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, int* src, int* dst){
-    /* change also the addressing methods (the values in src and dst):
-                    initialize them to -2 (will stay -2 only if there is no use of them) 
-                    if they are in use, the function change them:
-                        for valid addressing method - the number of the addressing method
-                        for invalid methods -1
-        and the error note if the parameters are invalid*/
+bool validation_check_and_insertion_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, InstructionParameter* src, InstructionParameter* dst){
 
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
     int how_many_parameters_needed;
 
-    *src = -2;
-    *dst = -2;
 
     /* the number of parameters for a valid command */
     how_many_parameters_needed = atoi(instructions_commands_and_addressing[command][3]);
@@ -592,39 +618,41 @@ bool is_valid_addressing_methods(char* parameters, AssemblyCommands command, cha
         return true;
     }
     else if (how_many_parameters_needed == 1){
-        *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
+        get_addressing_methods(parsed_instruction_parameters.words[0], error_note, dst);
         free_separate_line(&parsed_instruction_parameters);
-        return (*src != -1) && valid_addressing_per_command(command, SOURCE, *src, error_note);
+        return valid_addressing_per_command(command, DESTINATION, dst->addressing_method, error_note);
     }
     else if (how_many_parameters_needed == 2){
-        *src = get_addressing_methods(parsed_instruction_parameters.words[0], error_note);
-        *dst = get_addressing_methods(parsed_instruction_parameters.words[1], error_note);
+        get_addressing_methods(parsed_instruction_parameters.words[0], error_note, src);
+        get_addressing_methods(parsed_instruction_parameters.words[1], error_note, dst);
         free_separate_line(&parsed_instruction_parameters);
-        return (*src != -1) && (*dst != -1) && valid_addressing_per_command(command, SOURCE, *src, error_note)
-                                            && valid_addressing_per_command(command, DESTINATION, *dst, error_note);
+        return valid_addressing_per_command(command, SOURCE, src->addressing_method, error_note)
+            && valid_addressing_per_command(command, DESTINATION, dst->addressing_method, error_note);
     }
     free_separate_line(&parsed_instruction_parameters);
     return false;
 }
+void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, InstructionParameter src, InstructionParameter dst, int command_num){
+    parsed_line->LineTypes.Instruction.command = command_num;
+    parsed_line->LineTypes.Instruction.source = src;
+    parsed_line->LineTypes.Instruction.dest = dst;
+}
+
 
 bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     char* instruction_parameters_in_one_word;
     char *error_note = NULL;
-    int source_parameter;
-    int destination_parameter;
+    InstructionParameter source_parameter;
+    InstructionParameter destination_parameter;
 
     int command_num = is_a_command_and_which(separated_words.words[parsed_words_ctr]);
-    parsed_line->LineTypes.Instruction.command = command_num;
+    
     parsed_words_ctr ++;
     
     instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, parsed_words_ctr);
 
-    if(!first_check_valid_parameters_or_error_line(parsed_line, instruction_parameters_in_one_word, errors_ptrs)){
-        free(instruction_parameters_in_one_word);
-        return false;
-    }    
 
-    if(!is_valid_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter)){
+    if(!validation_check_and_insertion_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter)){
         if(error_note != NULL){
             error_line(parsed_line, "instuction", error_note, errors_ptrs);
         }
@@ -634,6 +662,8 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
         free(instruction_parameters_in_one_word);
         return false;
     }
+
+    insert_instruction_parameters_to_the_parsed_line(parsed_line, source_parameter, destination_parameter, command_num);
 
     free(instruction_parameters_in_one_word);
     return true;
