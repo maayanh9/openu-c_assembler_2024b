@@ -755,12 +755,11 @@ bool first_pass(const char *input_file_name){
         ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
         CHECK_ALLOCATION(parsed_line);
 
-        counters.instruction_counter += counters.space_to_keep_for_current_line;
+        counters.instruction_counter += counters.space_to_keep_for_current_line + 1;
 
         parse_line(line, &counters, &symbols_table, &errors_ptrs, &entry_ptrs, &external_ptrs, parsed_line);
         counters.line_counter ++;
 
-        counters.instruction_counter += parsed_line->mete_data.space_to_keep_for_current_line;
 
         printf("%d\t", parsed_line->mete_data.instruction_counter);
         insert_new_cell_into_dynamic_list(&parsed_lines_list, parsed_line);
