@@ -743,7 +743,7 @@ bool first_pass(const char *input_file_name){
     initialize_dynamic_list(&external_ptrs, sizeof(ParsedLine *));
 
     counters.instruction_counter = 100;
-    counters.space_to_keep_for_current_line = -1;
+    counters.space_to_keep_for_current_line = 0;
     counters.line_counter = 1;
 
     if(!check_if_file_opened_successfully(input_file)){
@@ -755,7 +755,7 @@ bool first_pass(const char *input_file_name){
         ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
         CHECK_ALLOCATION(parsed_line);
 
-        counters.instruction_counter += counters.space_to_keep_for_current_line + 1;
+        counters.instruction_counter += counters.space_to_keep_for_current_line;
 
         parse_line(line, &counters, &symbols_table, &errors_ptrs, &entry_ptrs, &external_ptrs, parsed_line);
         counters.line_counter ++;
