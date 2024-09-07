@@ -725,17 +725,40 @@ finished_parsing_line:
     return parsed_line;
 }
 
+void free_all_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs){
+    free_dynamic_list(&parsed_lines_list);
+    free_dynamic_list(&symbols_table);
+    free_dynamic_list(&errors_ptrs);
+    free_dynamic_list(&external_ptrs);
+    free_dynamic_list(&entry_ptrs);
+}
 
-bool first_pass(const char *input_file_name){
-    bool result = false;
-    FILE *input_file = fopen(input_file_name, "r");
-    char line[MAX_LEN_LINE_ASSEMBLY_FILE];
-    LineMetaData counters;
+/* struct for passing data from first_pass function to second_pass function */
+typedef struct FirstPassOutput{
+    bool success;
     DynamicList parsed_lines_list;
     DynamicList symbols_table;
     DynamicList errors_ptrs;
     DynamicList entry_ptrs;
     DynamicList external_ptrs;
+} FirstPassOutput;
+
+
+FirstPassOutput first_pass(const char *input_file_name){
+    bool result = false;
+    FILE *input_file = fopen(input_file_name, "r");
+    char line[MAX_LEN_LINE_ASSEMBLY_FILE];
+    LineMetaData counters;
+
+    DynamicList parsed_lines_list;
+    DynamicList symbols_table;
+    DynamicList errors_ptrs;
+    DynamicList entry_ptrs;
+    DynamicList external_ptrs;
+
+    FirstPassOutput first_pass_output;
+
+    /** TODO: check if its better to init it and return DynamicList as a result for less lines*/
     initialize_dynamic_list(&parsed_lines_list, sizeof(ParsedLine));
     initialize_dynamic_list(&symbols_table, sizeof(ParsedLine *));
     initialize_dynamic_list(&errors_ptrs, sizeof(ParsedLine *));
@@ -767,19 +790,46 @@ bool first_pass(const char *input_file_name){
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
 
     }
-    result = true; 
-cleanup: 
+    result = true;
+
+    
+cleanup:
     fclose(input_file);
-    free_dynamic_list(&parsed_lines_list);
-    free_dynamic_list(&symbols_table);
-    free_dynamic_list(&errors_ptrs);
-    free_dynamic_list(&external_ptrs);
-    free_dynamic_list(&entry_ptrs);
-    return result;
+
+    if(result == false){
+        free_all_dynamic_lists(parsed_lines_list, symbols_table, errors_ptrs, entry_ptrs, external_ptrs);
+        first_pass_output.success = false;
+    }
+    else{
+        first_pass_output.success = true;
+        first_pass_output.parsed_lines_list = parsed_lines_list;
+        first_pass_output.symbols_table = symbols_table;
+        first_pass_output.errors_ptrs = errors_ptrs;
+        first_pass_output.entry_ptrs = entry_ptrs;
+        first_pass_output.external_ptrs = external_ptrs;
+    }
+    return first_pass_output;
+}
+
+bool second_pass(FirstPassOutput first_pass_output){
+    DynamicList parsed_lines_list = first_pass_output.parsed_lines_list;
+    DynamicList symbols_table = first_pass_output.symbols_table;
+    DynamicList errors_ptrs = first_pass_output.errors_ptrs;
+    DynamicList entry_ptrs = first_pass_output.entry_ptrs;
+    DynamicList external_ptrs = first_pass_output.external_ptrs;
+
+    if (!first_pass_output.success) {
+        return false;
+    }
+    free_all_dynamic_lists(parsed_lines_list, symbols_table, errors_ptrs, entry_ptrs, external_ptrs);
+    return true;
 }
 
 bool assembler(const char *input_file_name){
-    bool ans = first_pass(input_file_name);
-    return ans;
+    FirstPassOutput first_pass_output = first_pass(input_file_name);
+    if (!first_pass_output.success){
+        return false;
+    }
+    return second_pass(first_pass_output);
 }
 
