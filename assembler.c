@@ -822,6 +822,9 @@ cleanup:
     }
     return first_pass_output;
 }
+bool element_in_table() {
+
+}
 
 bool find_in_symbols_table(DynamicList symbols_table, InstructionParameter direct_parameter, int* symbol_address){
     char* direct_element_name = direct_parameter.Addressing.Direct.direct;
@@ -899,6 +902,9 @@ ParsedDataOutput second_pass(ParsedDataOutput first_pass_output){
     free_first_pass_dynamic_lists(second_data_output.parsed_lines_list, second_data_output.symbols_table, second_data_output.errors_ptrs, second_data_output.entry_ptrs, second_data_output.external_ptrs, second_data_output.direct_labels_ptrs);
     second_data_output.success = result;
     return second_data_output;
+}
+bool export_entry_file() {
+
 }
 
 bool export_output_assembler_files(ParsedDataOutput second_pass_output){
