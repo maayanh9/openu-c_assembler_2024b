@@ -752,8 +752,10 @@ void free_first_pass_dynamic_lists(DynamicList parsed_lines_list, DynamicList sy
     free_dynamic_list(&direct_labels_ptrs);
 }
 
-/* struct for passing data from first_pass function to second_pass function */
-typedef struct FirstPassOutput{
+/* struct for passing data from first_pass function to second_pass function
+ * and then to the export_output_assembler_files function
+ */
+typedef struct ParsedDataOutput{
     bool success;
     DynamicList parsed_lines_list;
     DynamicList symbols_table;
@@ -761,16 +763,16 @@ typedef struct FirstPassOutput{
     DynamicList entry_ptrs;
     DynamicList external_ptrs;
     DynamicList direct_labels_ptrs;
-} FirstPassOutput;
+} ParsedDataOutput;
 
 
-FirstPassOutput first_pass(const char *input_file_name){
+ParsedDataOutput first_pass(const char *input_file_name){
     bool result = false;
     FILE *input_file = fopen(input_file_name, "r");
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     LineMetaData counters;
 
-    FirstPassOutput first_pass_output;
+    ParsedDataOutput first_pass_output;
 
 
     /** TODO: check if its better to init it and return DynamicList as a result for less lines*/
@@ -862,7 +864,7 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                 printed = true;
             }
             else {
-                printf("%d ", symbol_address);
+                printf("%d: %s\t", symbol_address, direct_line.LineTypes.Instruction.source.Addressing.Direct.direct);
             }
         }
         if(is_dest_a_direct_addressing(direct_line)){
@@ -872,7 +874,7 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                 printed = true;
             }
             else
-                printf("%d ", symbol_address);
+                printf("%d: %s\t", symbol_address, direct_line.LineTypes.Instruction.dest.Addressing.Direct.direct);
         }
 
     }
@@ -883,29 +885,28 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
     return true;
 }
 
-bool second_pass(FirstPassOutput first_pass_output){
-    DynamicList parsed_lines_list = first_pass_output.parsed_lines_list;
-    DynamicList symbols_table = first_pass_output.symbols_table;
-    DynamicList errors_ptrs = first_pass_output.errors_ptrs;
-    DynamicList entry_ptrs = first_pass_output.entry_ptrs;
-    DynamicList external_ptrs = first_pass_output.external_ptrs;
-    DynamicList direct_labels_ptrs = first_pass_output.direct_labels_ptrs;
+ParsedDataOutput second_pass(ParsedDataOutput first_pass_output){
     bool result = true;
+    ParsedDataOutput second_data_output = first_pass_output;
 
     if (!first_pass_output.success){
         result = false;
     }
-    else if(!update_direct_addressing_from_symbols_table_or_print_errors(symbols_table, direct_labels_ptrs)){
+    else if(!update_direct_addressing_from_symbols_table_or_print_errors(second_data_output.symbols_table, second_data_output.direct_labels_ptrs)){
         result = false;
     }
 
+    free_first_pass_dynamic_lists(second_data_output.parsed_lines_list, second_data_output.symbols_table, second_data_output.errors_ptrs, second_data_output.entry_ptrs, second_data_output.external_ptrs, second_data_output.direct_labels_ptrs);
+    second_data_output.success = result;
+    return second_data_output;
+}
 
-    free_first_pass_dynamic_lists(parsed_lines_list, symbols_table, errors_ptrs, entry_ptrs, external_ptrs, direct_labels_ptrs);
-    return result;
+bool export_output_assembler_files(ParsedDataOutput second_pass_output){
+
 }
 
 bool assembler(const char *input_file_name){
-    FirstPassOutput first_pass_output = first_pass(input_file_name);
+    ParsedDataOutput first_pass_output = first_pass(input_file_name);
     if (!first_pass_output.success){
         return false;
     }
