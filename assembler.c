@@ -26,20 +26,22 @@ void handle_parsing_string_directive(SeparateLineIntoWords* separate_line, char*
     token_ptr = strtok(NULL, ""); /*the whole text after .string*/
 
     /* move the ptr forward if there are spaces ot tabs*/
-    if (token_ptr){
+    if (token_ptr) {
         while (*token_ptr == ' ' || *token_ptr == '\t'){
             token_ptr++;
         }
+        /* replace the last characters to \0 if they are spaces, tabs or \n
+            used to make sure the last word in .string ends without those characters*/
+        end_word_ptr = token_ptr + strlen(token_ptr) - 1;
+        while (end_word_ptr > token_ptr && (*end_word_ptr == ' ' || *end_word_ptr == '\t' || *end_word_ptr == '\n' || *end_word_ptr == '\r'))
+        {
+            *end_word_ptr = '\0';
+            end_word_ptr --;
+        }
+        add_next_word(separate_line, token_ptr);
     }
-    /* replace the last characters to \0 if they are spaces, tabs or \n
-    used to make sure the last word in .string ends without those characters*/
-    end_word_ptr = token_ptr + strlen(token_ptr) - 1;
-    while (end_word_ptr > token_ptr && (*end_word_ptr == ' ' || *end_word_ptr == '\t' || *end_word_ptr == '\n' || *end_word_ptr == '\r'))
-    {
-        *end_word_ptr = '\0';
-        end_word_ptr --;
-    }
-    add_next_word(separate_line, token_ptr);
+
+
 }
 
 SeparateLineIntoWords separate_line_into_words(char *line){
@@ -83,7 +85,7 @@ bool has_a_label(SeparateLineIntoWords separate_word){
     return false;
 }
 bool is_a_directive(char* next_unparsed_word){
-    /* check if the word starts with a dot, does not check if its a valid directive*/
+    /* check if the word starts with a dot, does not check if it's a valid directive*/
     if(next_unparsed_word[0] == '.'){
         return true;
     }
@@ -527,8 +529,8 @@ bool is_immediate(char* parameter){
 }
 int export_immediate_num(char* parameter){
     char* ptr = parameter;
-    if(*ptr != '#')
-        return false;
+    
+    /*skip the # at the beginning*/
     ptr ++;
 
     if(*ptr == '+'){
@@ -540,6 +542,9 @@ int export_immediate_num(char* parameter){
 bool get_addressing_methods(char* parameter, char** error_note, InstructionParameter *addressing_parameters){
     int direct_register_result = is_direct_register(parameter, error_note);
     int indirect_register_result = is_indirect_register(parameter, error_note);
+    if(*parameter == '\0'){
+        return false;
+    }
     if(is_immediate(parameter)){
         addressing_parameters->addressing_method = IMMEDIATE;
         addressing_parameters->Addressing.immediate = export_immediate_num(parameter);
@@ -599,7 +604,16 @@ bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_
     return false;
 }
 
-bool validation_check_and_insertion_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, InstructionParameter* src, InstructionParameter* dst, int* num_of_parameters){
+void insert_ptr_if_its_a_direct(DynamicList *direct_labels_ptrs, InstructionParameter* src_or_dst_of_instruction_ptr,
+                                ParsedLine *parsed_line){
+    if(src_or_dst_of_instruction_ptr->addressing_method == DIRECT){
+        if(direct_labels_ptrs->list_length == 0 || direct_labels_ptrs->items[direct_labels_ptrs->list_length - 1] != parsed_line){
+            insert_new_cell_into_dynamic_list(direct_labels_ptrs, parsed_line);
+        }
+    }
+}
+
+bool validation_check_and_insertion_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, InstructionParameter* src, InstructionParameter* dst, int* num_of_parameters, DynamicList *direct_labels_ptrs, ParsedLine *parsed_line){
 
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
 
@@ -617,12 +631,15 @@ bool validation_check_and_insertion_addressing_methods(char* parameters, Assembl
     }
     else if (*num_of_parameters == 1){
         get_addressing_methods(parsed_instruction_parameters.words[0], error_note, dst);
+        insert_ptr_if_its_a_direct(direct_labels_ptrs, dst, parsed_line);
         free_separate_line(&parsed_instruction_parameters);
         return valid_addressing_per_command(command, DESTINATION, dst->addressing_method, error_note);
     }
     else if (*num_of_parameters == 2){
         get_addressing_methods(parsed_instruction_parameters.words[0], error_note, src);
+        insert_ptr_if_its_a_direct(direct_labels_ptrs, src, parsed_line);
         get_addressing_methods(parsed_instruction_parameters.words[1], error_note, dst);
+        insert_ptr_if_its_a_direct(direct_labels_ptrs, dst, parsed_line);
         free_separate_line(&parsed_instruction_parameters);
         return valid_addressing_per_command(command, SOURCE, src->addressing_method, error_note)
             && valid_addressing_per_command(command, DESTINATION, dst->addressing_method, error_note);
@@ -653,7 +670,7 @@ void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, I
 }
 
 
-bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int parsed_words_ctr, DynamicList *symbols_table, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
+bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *direct_labels_ptrs){
     char* instruction_parameters_in_one_word;
     char *error_note = NULL;
     InstructionParameter source_parameter;
@@ -667,7 +684,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, parsed_words_ctr);
 
 
-    if(!validation_check_and_insertion_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter, &num_of_parameters)){
+    if(!validation_check_and_insertion_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter, &num_of_parameters, direct_labels_ptrs, parsed_line)){
         if(error_note != NULL){
             error_line(parsed_line, "instuction", error_note, errors_ptrs);
         }
@@ -685,7 +702,7 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
 }
 
 
-ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_table, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs, ParsedLine *parsed_line){
+ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_table, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs, DynamicList *direct_labels_ptrs, ParsedLine *parsed_line){
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
     int parsed_words_ctr = 0;
     parsed_line->mete_data.instruction_counter = counters->instruction_counter;
@@ -710,7 +727,7 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
     /*command or invalid data*/
     else{
         if(is_a_command_and_which(separated_words.words[parsed_words_ctr]) != -1){
-            check_validation_and_insert_instruction_parameters(parsed_line, parsed_words_ctr, symbols_table, separated_words, errors_ptrs);
+            check_validation_and_insert_instruction_parameters(parsed_line, parsed_words_ctr, separated_words, errors_ptrs, direct_labels_ptrs);
         }
         else{
             error_line(parsed_line, "line", line, errors_ptrs);
@@ -725,12 +742,14 @@ finished_parsing_line:
     return parsed_line;
 }
 
-void free_all_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs){
+void free_first_pass_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs){
+    /** TODO: get the struct instead */
     free_dynamic_list(&parsed_lines_list);
     free_dynamic_list(&symbols_table);
     free_dynamic_list(&errors_ptrs);
     free_dynamic_list(&external_ptrs);
     free_dynamic_list(&entry_ptrs);
+    free_dynamic_list(&direct_labels_ptrs);
 }
 
 /* struct for passing data from first_pass function to second_pass function */
@@ -741,6 +760,7 @@ typedef struct FirstPassOutput{
     DynamicList errors_ptrs;
     DynamicList entry_ptrs;
     DynamicList external_ptrs;
+    DynamicList direct_labels_ptrs;
 } FirstPassOutput;
 
 
@@ -750,20 +770,16 @@ FirstPassOutput first_pass(const char *input_file_name){
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     LineMetaData counters;
 
-    DynamicList parsed_lines_list;
-    DynamicList symbols_table;
-    DynamicList errors_ptrs;
-    DynamicList entry_ptrs;
-    DynamicList external_ptrs;
-
     FirstPassOutput first_pass_output;
 
+
     /** TODO: check if its better to init it and return DynamicList as a result for less lines*/
-    initialize_dynamic_list(&parsed_lines_list, sizeof(ParsedLine));
-    initialize_dynamic_list(&symbols_table, sizeof(ParsedLine *));
-    initialize_dynamic_list(&errors_ptrs, sizeof(ParsedLine *));
-    initialize_dynamic_list(&entry_ptrs, sizeof(ParsedLine *));
-    initialize_dynamic_list(&external_ptrs, sizeof(ParsedLine *));
+    initialize_dynamic_list(&first_pass_output.parsed_lines_list, sizeof(ParsedLine));
+    initialize_dynamic_list(&first_pass_output.symbols_table, sizeof(ParsedLine *));
+    initialize_dynamic_list(&first_pass_output.errors_ptrs, sizeof(ParsedLine *));
+    initialize_dynamic_list(&first_pass_output.entry_ptrs, sizeof(ParsedLine *));
+    initialize_dynamic_list(&first_pass_output.external_ptrs, sizeof(ParsedLine *));
+    initialize_dynamic_list(&first_pass_output.direct_labels_ptrs, sizeof(ParsedLine *));
 
     counters.instruction_counter = 100;
     counters.space_to_keep_for_current_line = 0;
@@ -780,13 +796,13 @@ FirstPassOutput first_pass(const char *input_file_name){
 
         counters.instruction_counter += counters.space_to_keep_for_current_line;
 
-        parse_line(line, &counters, &symbols_table, &errors_ptrs, &entry_ptrs, &external_ptrs, parsed_line);
+        parse_line(line, &counters, &first_pass_output.symbols_table, &first_pass_output.errors_ptrs, &first_pass_output.entry_ptrs, &first_pass_output.external_ptrs, &first_pass_output.direct_labels_ptrs, parsed_line);
         counters.line_counter ++;
 
 
         printf("%d\t", parsed_line->mete_data.instruction_counter);
-        insert_new_cell_into_dynamic_list(&parsed_lines_list, parsed_line);
-        parsed_lines_list.is_allocated = true;
+        insert_new_cell_into_dynamic_list(&first_pass_output.parsed_lines_list, parsed_line);
+        first_pass_output.parsed_lines_list.is_allocated = true;
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
 
     }
@@ -797,18 +813,74 @@ cleanup:
     fclose(input_file);
 
     if(result == false){
-        free_all_dynamic_lists(parsed_lines_list, symbols_table, errors_ptrs, entry_ptrs, external_ptrs);
         first_pass_output.success = false;
     }
     else{
         first_pass_output.success = true;
-        first_pass_output.parsed_lines_list = parsed_lines_list;
-        first_pass_output.symbols_table = symbols_table;
-        first_pass_output.errors_ptrs = errors_ptrs;
-        first_pass_output.entry_ptrs = entry_ptrs;
-        first_pass_output.external_ptrs = external_ptrs;
     }
     return first_pass_output;
+}
+
+bool find_in_symbols_table(DynamicList symbols_table, InstructionParameter direct_parameter, int* symbol_address){
+    char* direct_element_name = direct_parameter.Addressing.Direct.direct;
+    int i;
+    for(i = 0; i < symbols_table.list_length; i++){
+        ParsedLine *symbols_table_cell = symbols_table.items[i];
+        if(strcmp(symbols_table_cell->label, direct_element_name) == 0){
+            *symbol_address = symbols_table_cell->mete_data.instruction_counter;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_a_direct_addressing(InstructionParameter src_or_dst) {
+    if(src_or_dst.addressing_method == DIRECT) {
+        return  true;
+    }
+    return false;
+}
+
+bool is_dest_a_direct_addressing(ParsedLine direct_line) {
+    return is_a_direct_addressing(direct_line.LineTypes.Instruction.dest);
+}
+
+bool is_source_a_direct_addressing(ParsedLine direct_line) {
+    return is_a_direct_addressing(direct_line.LineTypes.Instruction.source);
+}
+
+bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList symbols_table, DynamicList direct_labels_ptrs){
+    int i;
+    bool printed = false;
+    printf("\n");
+    for(i = 0; i < direct_labels_ptrs.list_length; i++){
+        ParsedLine direct_line = *(ParsedLine*)direct_labels_ptrs.items[i];
+        if(is_source_a_direct_addressing(direct_line)) {
+            int symbol_address;
+            if(!find_in_symbols_table(symbols_table, direct_line.LineTypes.Instruction.source, &symbol_address)){
+                printf("label: %s is not found at the symbols table\n", direct_line.LineTypes.Instruction.source.Addressing.Direct.direct);
+                printed = true;
+            }
+            else {
+                printf("%d ", symbol_address);
+            }
+        }
+        if(is_dest_a_direct_addressing(direct_line)){
+            int symbol_address;
+            if(!find_in_symbols_table(symbols_table, direct_line.LineTypes.Instruction.dest, &symbol_address)){
+                printf("label: %s is not found at the symbols table\n", direct_line.LineTypes.Instruction.dest.Addressing.Direct.direct);
+                printed = true;
+            }
+            else
+                printf("%d ", symbol_address);
+        }
+
+    }
+    if(printed){
+        return false;
+    }
+
+    return true;
 }
 
 bool second_pass(FirstPassOutput first_pass_output){
@@ -817,12 +889,19 @@ bool second_pass(FirstPassOutput first_pass_output){
     DynamicList errors_ptrs = first_pass_output.errors_ptrs;
     DynamicList entry_ptrs = first_pass_output.entry_ptrs;
     DynamicList external_ptrs = first_pass_output.external_ptrs;
+    DynamicList direct_labels_ptrs = first_pass_output.direct_labels_ptrs;
+    bool result = true;
 
-    if (!first_pass_output.success) {
-        return false;
+    if (!first_pass_output.success){
+        result = false;
     }
-    free_all_dynamic_lists(parsed_lines_list, symbols_table, errors_ptrs, entry_ptrs, external_ptrs);
-    return true;
+    else if(!update_direct_addressing_from_symbols_table_or_print_errors(symbols_table, direct_labels_ptrs)){
+        result = false;
+    }
+
+
+    free_first_pass_dynamic_lists(parsed_lines_list, symbols_table, errors_ptrs, entry_ptrs, external_ptrs, direct_labels_ptrs);
+    return result;
 }
 
 bool assembler(const char *input_file_name){
