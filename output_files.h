@@ -6,4 +6,4 @@
 
 bool export_output_assembler_files(ParsedDataOutput second_pass_output);
 
-#endif //OUTPUT_FILES_H
+#endif
