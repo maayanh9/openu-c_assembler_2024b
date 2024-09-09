@@ -15,10 +15,11 @@
 
 #define NUM_OF_REGISTERS 8
 
-#define FILE_EXTENTION_PREPROCESSOR ".am"
-#define FILE_EXTENTION_INPUT_ASSEMBLER_FILE ".as"
-#define FILE_EXTENTION_OBJECT_FILE ".ob"
-#define FILE_EXTENTION_EXTERNAL_FILE ".ext"
+#define FILE_EXTENSION_PREPROCESSOR ".am"
+#define FILE_EXTENSION_INPUT_ASSEMBLER_FILE ".as"
+#define FILE_EXTENSION_OBJECT_FILE ".ob"
+#define FILE_EXTENSION_EXTERNAL_FILE ".ext"
+#define FILE_EXTENSION_ENTRY_FILE ".ent"
 
 
 static const char *instructions_commands_and_addressing[LEN_OF_COMMANDS_LIST][4] = {

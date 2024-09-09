@@ -24,7 +24,7 @@ bool assembler(const char *input_file_name){
     }
 
     /*Exporting files: */
-    return export_output_assembler_files(second_pass_output);
+    return export_output_assembler_files(second_pass_output, input_file_name);
 }
 
 void assembler_process(const char *input_file_name){
@@ -37,7 +37,7 @@ void assembler_process(const char *input_file_name){
         printf("file: %s error occurred in processing the file with the macros.\n", input_file_name);
         exit(1);
     }
-    am_extention = change_file_extention(input_file_name, FILE_EXTENTION_PREPROCESSOR);
+    am_extention = change_file_extention(input_file_name, FILE_EXTENSION_PREPROCESSOR);
     if(assembler(am_extention)) {
         printf("file: %s, processed successfully\n\n", input_file_name);
     }

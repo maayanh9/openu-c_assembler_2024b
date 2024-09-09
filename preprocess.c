@@ -266,7 +266,7 @@ bool parse_file_with_macros(const char *input_file_name){
 
     int last_index_inserted_to_macro_list = -1;
     Macro* macro_list = NULL;
-    char *output_file_name = change_file_extention(input_file_name, FILE_EXTENTION_PREPROCESSOR);
+    char *output_file_name = change_file_extention(input_file_name, FILE_EXTENSION_PREPROCESSOR);
     
     output_file = fopen(output_file_name, "w");
 
