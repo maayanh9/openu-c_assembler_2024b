@@ -790,8 +790,6 @@ FirstPassOutput first_pass(const char *input_file_name){
         parse_line(line, &counters, &first_pass_output.symbols_table, &first_pass_output.errors_ptrs, &first_pass_output.entry_ptrs, &first_pass_output.external_ptrs, &first_pass_output.direct_labels_ptrs, parsed_line);
         counters.line_counter ++;
 
-
-        printf("%d\t", parsed_line->mete_data.instruction_counter);
         insert_new_cell_into_dynamic_list(&first_pass_output.parsed_lines_list, parsed_line);
         first_pass_output.parsed_lines_list.is_allocated = true;
         /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/

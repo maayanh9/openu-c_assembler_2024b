@@ -110,7 +110,6 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                     char extern_file_line[MAX_LEN_OF_LABEL + 6];
                     sprintf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct, symbol_address);
                     insert_new_cell_into_dynamic_list(extern_file_data, extern_file_line);
-                    printf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct, symbol_address);
                 }
             }
         }
@@ -126,7 +125,6 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                     char extern_file_line[MAX_LEN_OF_LABEL + 6];
                     sprintf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct, symbol_address);
                     insert_new_cell_into_dynamic_list(extern_file_data, extern_file_line);
-                    printf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct, symbol_address);
                 }
             }
         }
@@ -147,7 +145,6 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
     second_data_output.success = true;
     initialize_dynamic_list(&second_data_output.extern_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output fine of the extern*/
     return second_data_output;
-
 }
 
 SecondPassOutput second_pass(FirstPassOutput first_pass_output){
