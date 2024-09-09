@@ -6,6 +6,7 @@
 #include "text_handler.h"
 #include "settings.h"
 #include "dynamic_list.h"
+#include "first_pass.h"
 
 
 typedef struct SeparateLineIntoWords
@@ -811,29 +812,4 @@ cleanup:
 }
 
 
-bool export_entry_file() {
-
-}
-
-bool export_output_assembler_files(ParsedDataOutput second_pass_output){
-    return true;
-}
-
-bool assembler(const char *input_file_name){
-
-    /*First pass: */
-    ParsedDataOutput data_output = first_pass(input_file_name);
-    if (!data_output.success){
-        return false;
-    }
-
-    /*Second pass: */
-    data_output = second_pass(data_output);
-    if (!data_output.success){
-        return false;
-    }
-
-    /*Exporting files: */
-    return export_output_assembler_files(data_output);
-}
 

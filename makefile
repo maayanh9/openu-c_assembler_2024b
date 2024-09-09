@@ -4,26 +4,27 @@ BUILD_DIR	= build
 
 all: create_dir $(PROG_NAME)
 
+$(PROG_NAME): main.o preprocess.o first_pass.o second_pass.o dynamic_list.o output_files.o text_handler.o
+	gcc $(FLAGS) $^ -o $@
 
-$(PROG_NAME): $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/text_handler.o $(BUILD_DIR)/assembler.o  $(BUILD_DIR)/dynamic_list.o
-	gcc $(FLAGS) $(BUILD_DIR)/main.o $(BUILD_DIR)/preprocess.o $(BUILD_DIR)/text_handler.o $(BUILD_DIR)/assembler.o $(BUILD_DIR)/dynamic_list.o -o $(BUILD_DIR)/$(PROG_NAME)
+main.o: main.c preprocess.h settings.h text_handler.h first_pass.h \
+ dynamic_list.h second_pass.h output_files.h
 
+preprocess.o: preprocess.c preprocess.h settings.h text_handler.h
 
+first_pass.o: first_pass.c text_handler.h settings.h dynamic_list.h \
+ first_pass.h
 
-$(BUILD_DIR)/main.o: main.c preprocess.h assembler.h
-	gcc $(FLAGS) -c main.c -o $(BUILD_DIR)/main.o
+second_pass.o: second_pass.c second_pass.h settings.h dynamic_list.h \
+ first_pass.h
 
-$(BUILD_DIR)/preprocess.o: preprocess.c preprocess.h settings.h text_handler.h
-	gcc $(FLAGS) -c preprocess.c -o $(BUILD_DIR)/preprocess.o
+dynamic_list.o: dynamic_list.c dynamic_list.h text_handler.h
 
-$(BUILD_DIR)/text_handler.o: text_handler.c text_handler.h settings.h
-	gcc $(FLAGS) -c text_handler.c -o $(BUILD_DIR)/text_handler.o
+output_files.o: output_files.c output_files.h first_pass.h dynamic_list.h
 
-$(BUILD_DIR)/assembler.o: assembler.c assembler.h settings.h
-	gcc $(FLAGS) -c assembler.c -o $(BUILD_DIR)/assembler.o
+text_handler.o: text_handler.c text_handler.h
 
-$(BUILD_DIR)/dynamic_list.o: dynamic_list.c dynamic_list.h text_handler.h
-	gcc $(FLAGS) -c dynamic_list.c -o $(BUILD_DIR)/dynamic_list.o
+%.o: gcc $(FLAGS) -c $<
 
 create_dir:
 	mkdir -p $(BUILD_DIR)

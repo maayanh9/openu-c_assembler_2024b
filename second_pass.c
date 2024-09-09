@@ -6,7 +6,7 @@
 #include "second_pass.h"
 #include "settings.h"
 #include "dynamic_list.h"
-#include "assembler.h"
+#include "first_pass.h"
 
 
 typedef enum Table {
