@@ -580,11 +580,6 @@ bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_nee
     return (parameters_in_line == how_many_parameters_needed);
 }
 
-typedef enum{
-    DESTINATION = 1,
-    SOURCE
-}SourceOrDest;
-
 bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_dest, AddressingMethod addressing_method, char** error_note){
     const char* valid_addressing_ptr = instructions_commands_and_addressing[command][src_or_dest];
     int valid_addressing_method = (AddressingMethod)(*valid_addressing_ptr - '0');
@@ -742,7 +737,7 @@ finished_parsing_line:
     return parsed_line;
 }
 
-void free_first_pass_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs){
+void free_parsed_data_output_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs){
     /** TODO: get the struct instead */
     free_dynamic_list(&parsed_lines_list);
     free_dynamic_list(&symbols_table);
@@ -755,15 +750,7 @@ void free_first_pass_dynamic_lists(DynamicList parsed_lines_list, DynamicList sy
 /* struct for passing data from first_pass function to second_pass function
  * and then to the export_output_assembler_files function
  */
-typedef struct ParsedDataOutput{
-    bool success;
-    DynamicList parsed_lines_list;
-    DynamicList symbols_table;
-    DynamicList errors_ptrs;
-    DynamicList entry_ptrs;
-    DynamicList external_ptrs;
-    DynamicList direct_labels_ptrs;
-} ParsedDataOutput;
+
 
 
 ParsedDataOutput first_pass(const char *input_file_name){
@@ -822,87 +809,8 @@ cleanup:
     }
     return first_pass_output;
 }
-bool element_in_table() {
 
-}
 
-bool find_in_symbols_table(DynamicList symbols_table, InstructionParameter direct_parameter, int* symbol_address){
-    char* direct_element_name = direct_parameter.Addressing.Direct.direct;
-    int i;
-    for(i = 0; i < symbols_table.list_length; i++){
-        ParsedLine *symbols_table_cell = symbols_table.items[i];
-        if(strcmp(symbols_table_cell->label, direct_element_name) == 0){
-            *symbol_address = symbols_table_cell->mete_data.instruction_counter;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool is_a_direct_addressing(InstructionParameter src_or_dst) {
-    if(src_or_dst.addressing_method == DIRECT) {
-        return  true;
-    }
-    return false;
-}
-
-bool is_dest_a_direct_addressing(ParsedLine direct_line) {
-    return is_a_direct_addressing(direct_line.LineTypes.Instruction.dest);
-}
-
-bool is_source_a_direct_addressing(ParsedLine direct_line) {
-    return is_a_direct_addressing(direct_line.LineTypes.Instruction.source);
-}
-
-bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList symbols_table, DynamicList direct_labels_ptrs){
-    int i;
-    bool printed = false;
-    printf("\n");
-    for(i = 0; i < direct_labels_ptrs.list_length; i++){
-        ParsedLine direct_line = *(ParsedLine*)direct_labels_ptrs.items[i];
-        if(is_source_a_direct_addressing(direct_line)) {
-            int symbol_address;
-            if(!find_in_symbols_table(symbols_table, direct_line.LineTypes.Instruction.source, &symbol_address)){
-                printf("label: %s is not found at the symbols table\n", direct_line.LineTypes.Instruction.source.Addressing.Direct.direct);
-                printed = true;
-            }
-            else {
-                printf("%d: %s\t", symbol_address, direct_line.LineTypes.Instruction.source.Addressing.Direct.direct);
-            }
-        }
-        if(is_dest_a_direct_addressing(direct_line)){
-            int symbol_address;
-            if(!find_in_symbols_table(symbols_table, direct_line.LineTypes.Instruction.dest, &symbol_address)){
-                printf("label: %s is not found at the symbols table\n", direct_line.LineTypes.Instruction.dest.Addressing.Direct.direct);
-                printed = true;
-            }
-            else
-                printf("%d: %s\t", symbol_address, direct_line.LineTypes.Instruction.dest.Addressing.Direct.direct);
-        }
-
-    }
-    if(printed){
-        return false;
-    }
-
-    return true;
-}
-
-ParsedDataOutput second_pass(ParsedDataOutput first_pass_output){
-    bool result = true;
-    ParsedDataOutput second_data_output = first_pass_output;
-
-    if (!first_pass_output.success){
-        result = false;
-    }
-    else if(!update_direct_addressing_from_symbols_table_or_print_errors(second_data_output.symbols_table, second_data_output.direct_labels_ptrs)){
-        result = false;
-    }
-
-    free_first_pass_dynamic_lists(second_data_output.parsed_lines_list, second_data_output.symbols_table, second_data_output.errors_ptrs, second_data_output.entry_ptrs, second_data_output.external_ptrs, second_data_output.direct_labels_ptrs);
-    second_data_output.success = result;
-    return second_data_output;
-}
 bool export_entry_file() {
 
 }

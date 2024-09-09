@@ -1,5 +1,5 @@
-#ifndef PREPROCESS_H
-#define PREPROCESS_H
+#ifndef DYNAMIC_LIST_H
+#define DYNAMIC_LIST_H
 
 
 typedef struct DynamicList{
