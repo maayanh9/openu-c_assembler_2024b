@@ -15,7 +15,7 @@ typedef struct SeparateLineIntoWords
     int words_counter;
 }SeparateLineIntoWords;
 
-void add_next_word(SeparateLineIntoWords* separate_line, char* token_ptr) {
+void add_next_word(SeparateLineIntoWords* separate_line, char* token_ptr){
     char* new_word = string_copy(token_ptr);
     separate_line->words[separate_line->words_counter] = new_word;
     separate_line->words_counter++;
@@ -676,9 +676,8 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     int command_num = is_a_command_and_which(separated_words.words[parsed_words_ctr]);
     
     parsed_words_ctr ++;
-    
-    instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, parsed_words_ctr);
 
+    instruction_parameters_in_one_word = connect_unparsed_separate_strings(separated_words, parsed_words_ctr);
 
     if(!validation_check_and_insertion_addressing_methods(instruction_parameters_in_one_word, command_num, &error_note, &source_parameter, &destination_parameter, &num_of_parameters, direct_labels_ptrs, parsed_line)){
         if(error_note != NULL){
@@ -694,6 +693,8 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     insert_instruction_parameters_to_the_parsed_line(parsed_line, source_parameter, destination_parameter, command_num, num_of_parameters);
 
     free(instruction_parameters_in_one_word);
+
+    parsed_line->line_type = COMMAND_LINE;
     return true;
 }
 
@@ -754,13 +755,13 @@ void free_parsed_data_output_dynamic_lists(DynamicList parsed_lines_list, Dynami
 
 
 
-ParsedDataOutput first_pass(const char *input_file_name){
+FirstPassOutput first_pass(const char *input_file_name){
     bool result = false;
     FILE *input_file = fopen(input_file_name, "r");
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
     LineMetaData counters;
 
-    ParsedDataOutput first_pass_output;
+    FirstPassOutput first_pass_output;
 
 
     /** TODO: check if its better to init it and return DynamicList as a result for less lines*/

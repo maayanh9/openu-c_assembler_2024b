@@ -8,21 +8,23 @@
 #include "output_files.h"
 
 bool assembler(const char *input_file_name){
+    FirstPassOutput first_pass_output;
+    SecondPassOutput second_pass_output;
 
     /*First pass: */
-    ParsedDataOutput data_output = first_pass(input_file_name);
-    if (!data_output.success){
+    first_pass_output = first_pass(input_file_name);
+    if (!first_pass_output.success){
         return false;
     }
 
     /*Second pass: */
-    data_output = second_pass(data_output);
-    if (!data_output.success){
+    second_pass_output = second_pass(first_pass_output);
+    if (!second_pass_output.success){
         return false;
     }
 
     /*Exporting files: */
-    return export_output_assembler_files(data_output);
+    return export_output_assembler_files(second_pass_output);
 }
 
 void assembler_process(const char *input_file_name){

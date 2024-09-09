@@ -7,7 +7,7 @@
 bool assembler(const char *input_file_name);
 
 
-typedef struct ParsedDataOutput{
+typedef struct FirstPassOutput{
     bool success;
     DynamicList parsed_lines_list;
     DynamicList symbols_table;
@@ -15,7 +15,7 @@ typedef struct ParsedDataOutput{
     DynamicList entry_ptrs;
     DynamicList external_ptrs;
     DynamicList direct_labels_ptrs;
-} ParsedDataOutput;
+} FirstPassOutput;
 
 void free_parsed_data_output_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs);
 
@@ -24,6 +24,6 @@ typedef enum{
     SOURCE
 }SourceOrDest;
 
-ParsedDataOutput first_pass(const char *input_file_name);
+FirstPassOutput first_pass(const char *input_file_name);
 
 #endif
