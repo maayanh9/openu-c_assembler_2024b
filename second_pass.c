@@ -97,7 +97,6 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
     bool printed = false;
     char* extern_file = malloc(MAX_LEN_OF_LABEL + 6);
 
-    printf("\n");
     for(i = 0; i < direct_labels_ptrs.list_length; i++) {
         ParsedLine *direct_line = (ParsedLine*)direct_labels_ptrs.items[i];
         if(is_source_a_direct_addressing(*direct_line)) {
