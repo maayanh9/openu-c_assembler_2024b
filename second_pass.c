@@ -7,6 +7,7 @@
 #include "settings.h"
 #include "dynamic_list.h"
 #include "first_pass.h"
+#include "text_handler.h"
 
 
 typedef enum Table {
@@ -94,6 +95,8 @@ bool find_direct_label_in_tables(DynamicList symbols_table, DynamicList entry_pt
 bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList symbols_table, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs, DynamicList *extern_file_data) {
     int i;
     bool printed = false;
+    char* extern_file = malloc(MAX_LEN_OF_LABEL + 6);
+
     printf("\n");
     for(i = 0; i < direct_labels_ptrs.list_length; i++) {
         ParsedLine *direct_line = (ParsedLine*)direct_labels_ptrs.items[i];
@@ -105,14 +108,15 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                 printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct);
                 printed = true;
             }
-            else{
-                if(found_at_extern_table) {
-                    char extern_file_line[MAX_LEN_OF_LABEL + 6];
-                    sprintf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct, symbol_address);
-                    insert_new_cell_into_dynamic_list(extern_file_data, extern_file_line);
-                }
+            else if(found_at_extern_table) {
+                char *extern_file_line = malloc(MAX_LEN_OF_LABEL + 6);
+                CHECK_ALLOCATION(extern_file_line);
+                sprintf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct, symbol_address);
+                insert_new_cell_into_dynamic_list(extern_file_data, extern_file_line);
+                extern_file_data->is_allocated = true;
             }
         }
+
         if(is_dest_a_direct_addressing(*direct_line)){
             int symbol_address;
             bool found_at_extern_table = false;
@@ -120,12 +124,11 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                 printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct);
                 printed = true;
             }
-            else {
-                if(found_at_extern_table) {
-                    char extern_file_line[MAX_LEN_OF_LABEL + 6];
-                    sprintf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct, symbol_address);
-                    insert_new_cell_into_dynamic_list(extern_file_data, extern_file_line);
-                }
+            else if(found_at_extern_table){
+                char *extern_file_line = malloc(MAX_LEN_OF_LABEL + 6);
+                CHECK_ALLOCATION(extern_file_line);
+                sprintf(extern_file_line, "%s %04d\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct, symbol_address);
+                insert_new_cell_into_dynamic_list(extern_file_data, extern_file_line);
             }
         }
     }
@@ -148,6 +151,7 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
 }
 
 SecondPassOutput second_pass(FirstPassOutput first_pass_output){
+    int i;
     bool result = true;
     SecondPassOutput second_pass_output = initialize_second_pass_output(first_pass_output);
 
