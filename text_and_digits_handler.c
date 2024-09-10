@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "text_handler.h"
+#include "text_and_digits_handler.h"
+#include "settings.h"
 
 char* string_copy(const char* str_input) {
     char* str_copy = (char *)malloc(strlen(str_input) + 1); /* plus 1 for \0*/
@@ -40,4 +41,15 @@ bool check_if_file_opened_successfully(FILE *file){
     }
     return true;
 }
+typedef enum {
+    A_R_E,
+    DEST_ADDRESSING,
+    SOURCE_ADDRESSING,
+    OPCODE,
+    STRING_OR_DATA
+} EncodingParameters;
 
+
+int add_element_to_encoding(int current_encoding, int element, int where_to_insert) {
+    return current_encoding | (element << where_to_insert);
+}

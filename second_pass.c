@@ -7,7 +7,7 @@
 #include "settings.h"
 #include "dynamic_list.h"
 #include "first_pass.h"
-#include "text_handler.h"
+#include "text_and_digits_handler.h"
 
 
 typedef enum Table {
@@ -173,7 +173,70 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
         return false;
     }
     return true;
+}
 
+bool convert_data_directive_to_binary(int* data_numbers, int num_of_elements) {
+    return true;
+}
+
+bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* binary_list) {
+    AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
+    switch (directive_type) {
+        case DATA:
+            int* data_numbers = line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers;
+            int num_of_elements = line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
+            convert_data_directive_to_binary(data_numbers, num_of_elements);
+            break;
+        case STRING:
+            break;
+        case EXTERN:
+            break;
+        case ENTRY:
+            break;
+        default:
+            break;
+    }
+
+    return true;
+}
+
+bool convert_parsed_lines_to_binary(DynamicList parsed_lines_list, DynamicList* binary_list) {
+    int i;
+    for (i = 0; i < parsed_lines_list.list_length; i++) {
+        ParsedLine *line = (ParsedLine*)parsed_lines_list.items[i];
+        switch (line->line_type) {
+            /* no need to check for ERROR_LINE, because the program will check for them before*/
+            case DIRECTIVE_LINE:
+                break;
+            case COMMAND_LINE:
+                break;
+            case EMPTY_OR_COMMENT_LINE:
+                /*no need to parse*/
+                break;
+            default:
+                break;
+        }
+    }
+    return true;
+}
+
+bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
+    /*checks for error lines. if there are error lines,
+     * the lines will be printed.
+     * the function returns:    true if there are errors
+     *                          and false if there are not
+     */
+
+    /** TODO: add it to the first pass*/
+
+    int i;
+    if(errors_ptrs.list_length == 0) {
+        return false;
+    }
+    for(i = 0; i< errors_ptrs.list_length; i++) {
+        printf("%s", ((ParsedLine*)errors_ptrs.items[i])->LineTypes.error_str);
+    }
+    return true;
 }
 
 SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output) {
@@ -198,6 +261,9 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
         result = false;
     }
     else if(!parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table)){
+        result = false;
+    }
+    else if(found_errors_in_the_assembly_input_file(second_pass_output.errors_ptrs)) {
         result = false;
     }
 

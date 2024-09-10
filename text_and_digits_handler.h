@@ -1,5 +1,5 @@
-#ifndef TEXT_HANDLER_H
-#define TEXT_HANDLER_H
+#ifndef TEXT_AND_DIGITS_HANDLER_H
+#define TEXT_AND_DIGITS_HANDLER_H
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -16,5 +16,7 @@ char* string_copy(const char* str_input);
 char* change_file_extention(const char* file_name, const char* file_extention);
 
 bool check_if_file_opened_successfully(FILE *file);
+
+int add_element_to_encoding(int current_encoding, int element, int where_to_insert);
 
 #endif

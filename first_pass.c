@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-#include "text_handler.h"
+#include "text_and_digits_handler.h"
 #include "settings.h"
 #include "dynamic_list.h"
 #include "first_pass.h"

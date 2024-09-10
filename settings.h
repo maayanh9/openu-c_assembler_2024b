@@ -21,6 +21,11 @@
 #define FILE_EXTENSION_EXTERNAL_FILE ".ext"
 #define FILE_EXTENSION_ENTRY_FILE ".ent"
 
+#define BIT_STORAGE_STARTS_FOR_OPCODE 11
+#define BIT_STORAGE_STARTS_FOR_SOURCE_ADDRESSING_METHOD 7
+#define BIT_STORAGE_STARTS_FOR_DESTINATION_ADDRESSING_METHOD 3
+#define BIT_STORAGE_STARTS_FOR_A_R_E_FIELDS 0
+
 
 static const char *instructions_commands_and_addressing[LEN_OF_COMMANDS_LIST][4] = {
     /*command, dst, src, how_many_parameters*/

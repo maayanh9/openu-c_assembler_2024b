@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "dynamic_list.h"
-#include "text_handler.h"
+#include "text_and_digits_handler.h"
 
 
 void initialize_dynamic_list(DynamicList* list, int item_size){
