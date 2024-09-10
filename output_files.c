@@ -8,29 +8,46 @@
 #include "second_pass.h"
 #include "text_handler.h"
 
+typedef enum EntryOrExtern {
+    ENTRY_LIST,
+    EXTERN_LIST
+}EntryOrExtern;
 
-bool export_entry_file(DynamicList entry_ptrs, char* entry_file_name){
-    return true;
-}
-
-bool export_external_file(DynamicList extern_file_data, char* extern_file_path){
+bool export_file_from_list(DynamicList list, const char* file_path, EntryOrExtern entry_or_extern) {
     int i;
-    FILE *extern_file;
+    FILE *file;
 
-    if (extern_file_data.list_length == 0) /*do not create a file if there aren't extern commands in the assembly code*/
+    if (list.list_length == 0) /*do not create a file if there aren't extern commands in the assembly code*/
         return true;
-
-    extern_file = fopen(extern_file_path, "w");
-    if(!check_if_file_opened_successfully(extern_file)) {
-        printf("ERROR - could not create file: %s\n", extern_file_path);
+    file = fopen(file_path, "w");
+    if(!check_if_file_opened_successfully(file)) {
+        printf("ERROR - could not create file: %s\n", file_path);
         return false;
     }
 
-    for(i = 0; i< extern_file_data.list_length; i++) {
-        fprintf(extern_file,"%s", extern_file_data.items[i]);
+    for(i = 0; i< list.list_length; i++) {
+        switch (entry_or_extern) {
+            case ENTRY_LIST:
+                ParsedLine *parsed_entry_line = (ParsedLine *)list.items[i];
+                fprintf(file, "%s %04d\n", ((ParsedLine *)list.items[i])->LineTypes.Directive.DirectiveTypes.entry_or_extern, ((ParsedLine *)list.items[i])->mete_data.instruction_counter);
+                break;
+            case EXTERN_LIST:
+                fprintf(file,"%s", (char*)list.items[i]);
+                break;
+            default:
+                break;
+        }
+
     }
-    fclose(extern_file);
+    fclose(file);
     return true;
+}
+bool export_entry_file(DynamicList entry_ptrs, char* entry_file_path){
+    return export_file_from_list(entry_ptrs, entry_file_path, ENTRY_LIST);
+}
+
+bool export_external_file(DynamicList extern_file_data, char* extern_file_path){
+    return export_file_from_list(extern_file_data, extern_file_path, EXTERN_LIST);
 }
 
 bool create_first_pass_parsed_file_and_return(){
