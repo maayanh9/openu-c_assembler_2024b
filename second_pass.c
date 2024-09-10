@@ -166,7 +166,6 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
             error_massage(entry_label, &printed_errors);
         }
         else {
-            printf("%s %d\n", entry_label, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.instruction_counter);
             update_entry_or_extern_table(entry_file_data, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.instruction_counter, entry_label);
         }
     }
@@ -198,7 +197,9 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     else if(!update_direct_addressing_from_symbols_table_or_print_errors(first_pass_output.symbols_table, first_pass_output.external_ptrs, first_pass_output.direct_labels_ptrs, &second_pass_output.extern_file_data)){
         result = false;
     }
-    parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table);
+    else if(!parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table)){
+        result = false;
+    }
 
     free_dynamic_list(&first_pass_output.symbols_table);
     free_dynamic_list(&first_pass_output.direct_labels_ptrs);

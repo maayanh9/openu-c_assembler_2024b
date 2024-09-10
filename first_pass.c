@@ -128,7 +128,6 @@ void error_line(ParsedLine* parsed_line, char* type, char* invalid_data, Dynamic
     sprintf(parsed_line->LineTypes.error_str, "Invalid %s: %s, at line %d.\n", type, invalid_data, line_counter);
 
     insert_new_cell_into_dynamic_list(errors_ptrs, parsed_line);
-    printf("%s\t**********", parsed_line->LineTypes.error_str);
     
 }
 bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_many_words_in_line){

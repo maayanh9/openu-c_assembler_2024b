@@ -8,12 +8,8 @@
 #include "second_pass.h"
 #include "text_handler.h"
 
-typedef enum EntryOrExtern {
-    ENTRY_LIST,
-    EXTERN_LIST
-}EntryOrExtern;
 
-bool export_file_from_list(DynamicList list, const char* file_path, EntryOrExtern entry_or_extern) {
+bool export_file_from_list(DynamicList list, const char* file_path) {
     int i;
     FILE *file;
 
@@ -26,29 +22,12 @@ bool export_file_from_list(DynamicList list, const char* file_path, EntryOrExter
     }
 
     for(i = 0; i< list.list_length; i++) {
-        switch (entry_or_extern) {
-            case ENTRY_LIST:
-                ParsedLine *parsed_entry_line = (ParsedLine *)list.items[i];
-                fprintf(file, "%s %04d\n", ((ParsedLine *)list.items[i])->LineTypes.Directive.DirectiveTypes.entry_or_extern, ((ParsedLine *)list.items[i])->mete_data.instruction_counter);
-                break;
-            case EXTERN_LIST:
-                fprintf(file,"%s", (char*)list.items[i]);
-                break;
-            default:
-                break;
-        }
-
+        fprintf(file,"%s", (char*)list.items[i]);
     }
     fclose(file);
     return true;
 }
-bool export_entry_file(DynamicList entry_ptrs, char* entry_file_path){
-    return export_file_from_list(entry_ptrs, entry_file_path, ENTRY_LIST);
-}
 
-bool export_external_file(DynamicList extern_file_data, char* extern_file_path){
-    return export_file_from_list(extern_file_data, extern_file_path, EXTERN_LIST);
-}
 
 bool create_first_pass_parsed_file_and_return(){
     return true;
@@ -72,21 +51,30 @@ bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
     return true;
 }
 
+void free_file_names(char *entry_file_path, char *external_file_path, char *object_file_path) {
+    free(entry_file_path);
+    free(external_file_path);
+    free(object_file_path);
+}
 
 bool export_output_assembler_files(SecondPassOutput second_pass_output, const char *file_name){
-    char* entry_file_name = change_file_extention(string_copy(file_name), FILE_EXTENSION_ENTRY_FILE);
-    char* external_file_name = change_file_extention(string_copy(file_name), FILE_EXTENSION_EXTERNAL_FILE);
+    char* entry_file_path = change_file_extention(string_copy(file_name), FILE_EXTENSION_ENTRY_FILE);
+    char* external_file_path = change_file_extention(string_copy(file_name), FILE_EXTENSION_EXTERNAL_FILE);
+    char* object_file_path = change_file_extention(string_copy(file_name), FILE_EXTENSION_OBJECT_FILE);
+
 
     if(found_errors_in_the_assembly_input_file(second_pass_output.errors_ptrs)) {
-        free(entry_file_name);
-        free(external_file_name);
+        free_file_names(entry_file_path, external_file_path, object_file_path);
         return false;
     }
-    /*export_entry_file(second_pass_output.entry_ptrs, entry_file_name);*/
-    export_external_file(second_pass_output.extern_file_data, external_file_name);
 
-    free(entry_file_name);
-    free(external_file_name);
+    /*exporting the entry and extern files*/
+    if(!export_file_from_list(second_pass_output.entry_file_data, entry_file_path) ||
+        !export_file_from_list(second_pass_output.extern_file_data, external_file_path)) {
+        return false;
+    }
+
+    free_file_names(entry_file_path, external_file_path, object_file_path);
     return true;
 }
 
