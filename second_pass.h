@@ -11,6 +11,7 @@ typedef struct SecondPassOutput{
     DynamicList entry_file_data;
     DynamicList extern_file_data;
     DynamicList direct_labels_ptrs;
+    DynamicList object_file;
 } SecondPassOutput;
 
 SecondPassOutput second_pass(FirstPassOutput first_pass_output);

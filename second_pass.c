@@ -174,19 +174,31 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
     }
     return true;
 }
+bool a_valid_num(int num) {
+    /* check if it is a signed int in the range can be storage on 15bits (2^15 /2 = 2^14 for positive and negative)*/
+    return (num <= 16383) &&(num >= -16384);
+}
 
-bool convert_data_directive_to_binary(int* data_numbers, int num_of_elements) {
+bool insert_directive_data(int* data_numbers, int num_of_elements, DynamicList* object_file) {
+    int i;
+    for (i = 0; i<num_of_elements; i++) {
+        int current_number = data_numbers[i];
+        if(!a_valid_num(current_number)) {
+            printf("num: %d is larger than signed integer of 15bits.\n");
+            return false;
+        }
+
+    }
     return true;
 }
 
-bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* binary_list) {
+bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file) {
     AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
     switch (directive_type) {
         case DATA:
             int* data_numbers = line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers;
             int num_of_elements = line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
-            convert_data_directive_to_binary(data_numbers, num_of_elements);
-            break;
+            return insert_directive_data(data_numbers, num_of_elements, object_file);
         case STRING:
             break;
         case EXTERN:
@@ -196,28 +208,36 @@ bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* binary_list
         default:
             break;
     }
-
-    return true;
 }
 
-bool convert_parsed_lines_to_binary(DynamicList parsed_lines_list, DynamicList* binary_list) {
+void convert_line_to_binary(DynamicList *object_file, ParsedLine *line, bool *success) {
+    bool result = true;
+    switch (line->line_type) {
+        /* no need to check for ERROR_LINE, because the program will check for them before*/
+        case DIRECTIVE_LINE:
+            result = convert_directive_line_to_binary(line, object_file);
+            break;
+        case COMMAND_LINE:
+            break;
+        case EMPTY_OR_COMMENT_LINE:
+            /*no need to parse*/
+            break;
+        default:
+            break;
+    }
+    if (!result) {
+        *success = false;
+    }
+}
+
+bool convert_parsed_lines_to_binary(DynamicList parsed_lines_list, DynamicList* object_file) {
     int i;
+    bool success = true;
     for (i = 0; i < parsed_lines_list.list_length; i++) {
         ParsedLine *line = (ParsedLine*)parsed_lines_list.items[i];
-        switch (line->line_type) {
-            /* no need to check for ERROR_LINE, because the program will check for them before*/
-            case DIRECTIVE_LINE:
-                break;
-            case COMMAND_LINE:
-                break;
-            case EMPTY_OR_COMMENT_LINE:
-                /*no need to parse*/
-                break;
-            default:
-                break;
-        }
+        convert_line_to_binary(object_file, line, &success);
     }
-    return true;
+    return success;
 }
 
 bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
@@ -245,8 +265,9 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
     second_data_output.parsed_lines_list = first_pass_output.parsed_lines_list;
     second_data_output.errors_ptrs = first_pass_output.errors_ptrs;
     second_data_output.success = true;
-    initialize_dynamic_list(&second_data_output.extern_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output fine of the extern*/
-    initialize_dynamic_list(&second_data_output.entry_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output fine of the entry*/
+    initialize_dynamic_list(&second_data_output.extern_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output file of the extern*/
+    initialize_dynamic_list(&second_data_output.entry_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output file of the entry*/
+    initialize_dynamic_list(&second_data_output.entry_file_data, sizeof(int) * (LENGTH_OF_LINE_OBJECT_FILE)); /*to insert directly the output object file */
     return second_data_output;
 }
 
