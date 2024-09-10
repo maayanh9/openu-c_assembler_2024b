@@ -188,8 +188,8 @@ bool insert_line_to_object_file(DynamicList *object_file, int address, int decim
 
     file_line = malloc(LENGTH_OF_LINE_OBJECT_FILE);
     CHECK_ALLOCATION(file_line);
-    sprintf(file_line, "%04d %05d\n", address, (unsigned int)(decimal_instuction & 32767));
-    printf("%04d %05o\n", address, (unsigned int)(decimal_instuction & 32767));
+    sprintf(file_line, "%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instuction));
+    printf("%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instuction));
 
     insert_new_cell_into_dynamic_list(object_file, file_line);
     object_file->is_allocated = true;
@@ -217,6 +217,20 @@ bool handle_data_case(ParsedLine *line, DynamicList* object_file) {
     int line_num = line->mete_data.line_counter;
     return insert_directive_data(data_numbers, num_of_elements, address, line_num, object_file);
 }
+void insert_directive_string(char* string, int address, DynamicList* object_file) {
+    int i;
+    for(i = 0; i< strlen(string); i++) {
+        insert_line_to_object_file(object_file, address, (int)string[i]); /*convert the letter to integer*/
+        address ++;
+    }
+    insert_line_to_object_file(object_file, address, (int)'\0'); /*the end of the ascii string*/
+}
+
+void handle_string_case(ParsedLine *line, DynamicList* object_file) {
+    char* string = line->LineTypes.Directive.DirectiveTypes.ascii_string;
+    int address = line->mete_data.instruction_counter;
+    insert_directive_string(string, address, object_file);
+}
 
 bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file) {
     AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
@@ -224,11 +238,11 @@ bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file
         case DATA:
             return handle_data_case(line, object_file);
         case STRING:
-            break;
-        case EXTERN:
+            handle_string_case(line, object_file);
+        /*case EXTERN:
             break;
         case ENTRY:
-            break;
+            break;*/
         default:
             break;
     }
