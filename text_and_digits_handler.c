@@ -46,20 +46,6 @@ int add_element_to_encoding(int current_encoding, int element, int where_to_inse
     return current_encoding | (element << where_to_insert);
 }
 
-int convert_decimal_to_octal(int decimal_number, bool* overflow){
-    int octal_number = 0;
-    int place_value = 1;
-
-
-    while(decimal_number !=0){
-        octal_number += (decimal_number% 8) * place_value;
-
-        decimal_number = decimal_number / 8;
-        place_value *= 10;
-    }
-    /*the place_value will reach 10**5 for 5 digits and 10**6 for overflow (more than 5 digits on our case)*/
-    if (place_value >= 1000000){
-        *overflow = true;
-    }
-    return octal_number;
+int mask_15_bits(int number) {
+    return number & 32767; /*equals to 0111 1111 1111 1111 in binary*/
 }

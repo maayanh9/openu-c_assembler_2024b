@@ -178,27 +178,51 @@ bool a_valid_num(int num) {
     /* check if it is a signed int in the range can be storage on 15bits (2^15 /2 = 2^14 for positive and negative)*/
     return (num <= 16383) &&(num >= -16384);
 }
+bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instuction){
+    char *file_line;
 
-bool insert_directive_data(int* data_numbers, int num_of_elements, DynamicList* object_file) {
+    bool number_overflow = false;
+    /*const int octal_number = convert_decimal_to_octal(decimal_instuction, &number_overflow);*/
+    if(number_overflow)
+        return false;
+
+    file_line = malloc(LENGTH_OF_LINE_OBJECT_FILE);
+    CHECK_ALLOCATION(file_line);
+    sprintf(file_line, "%04d %05d\n", address, (unsigned int)(decimal_instuction & 32767));
+    printf("%04d %05o\n", address, (unsigned int)(decimal_instuction & 32767));
+
+    insert_new_cell_into_dynamic_list(object_file, file_line);
+    object_file->is_allocated = true;
+
+    return true;
+}
+
+bool insert_directive_data(int* data_numbers, int num_of_elements, int address, int line_num, DynamicList* object_file) {
     int i;
     for (i = 0; i<num_of_elements; i++) {
         int current_number = data_numbers[i];
         if(!a_valid_num(current_number)) {
-            printf("num: %d is larger than signed integer of 15bits.\n");
+            printf("line %d:\tnum: %d is larger than signed integer of 15bits.\n", line_num, current_number);
             return false;
         }
-
+        insert_line_to_object_file(object_file, address, current_number);
+        address ++;
     }
     return true;
+}
+bool handle_data_case(ParsedLine *line, DynamicList* object_file) {
+    int* data_numbers = line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers;
+    int num_of_elements = line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
+    int address = line->mete_data.instruction_counter;
+    int line_num = line->mete_data.line_counter;
+    return insert_directive_data(data_numbers, num_of_elements, address, line_num, object_file);
 }
 
 bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file) {
     AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
     switch (directive_type) {
         case DATA:
-            int* data_numbers = line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers;
-            int num_of_elements = line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
-            return insert_directive_data(data_numbers, num_of_elements, object_file);
+            return handle_data_case(line, object_file);
         case STRING:
             break;
         case EXTERN:
@@ -208,6 +232,7 @@ bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file
         default:
             break;
     }
+    return true;
 }
 
 void convert_line_to_binary(DynamicList *object_file, ParsedLine *line, bool *success) {
@@ -267,7 +292,7 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
     second_data_output.success = true;
     initialize_dynamic_list(&second_data_output.extern_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output file of the extern*/
     initialize_dynamic_list(&second_data_output.entry_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6)); /*to insert directly the output file of the entry*/
-    initialize_dynamic_list(&second_data_output.entry_file_data, sizeof(int) * (LENGTH_OF_LINE_OBJECT_FILE)); /*to insert directly the output object file */
+    initialize_dynamic_list(&second_data_output.object_file, sizeof(char) * (LENGTH_OF_LINE_OBJECT_FILE + 1)); /*to insert directly the output object file */
     return second_data_output;
 }
 
@@ -285,6 +310,9 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
         result = false;
     }
     else if(found_errors_in_the_assembly_input_file(second_pass_output.errors_ptrs)) {
+        result = false;
+    }
+    else if(convert_parsed_lines_to_binary(first_pass_output.parsed_lines_list, &second_pass_output.object_file)) {
         result = false;
     }
 

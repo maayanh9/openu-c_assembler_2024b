@@ -19,4 +19,6 @@ bool check_if_file_opened_successfully(FILE *file);
 
 int add_element_to_encoding(int current_encoding, int element, int where_to_insert);
 
+int mask_15_bits(int number);
+
 #endif
