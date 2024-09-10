@@ -41,14 +41,6 @@ bool check_if_file_opened_successfully(FILE *file){
     }
     return true;
 }
-typedef enum {
-    A_R_E,
-    DEST_ADDRESSING,
-    SOURCE_ADDRESSING,
-    OPCODE,
-    STRING_OR_DATA
-} EncodingParameters;
-
 
 int add_element_to_encoding(int current_encoding, int element, int where_to_insert) {
     return current_encoding | (element << where_to_insert);
