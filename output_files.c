@@ -82,7 +82,7 @@ bool export_output_assembler_files(SecondPassOutput second_pass_output, const ch
         free(external_file_name);
         return false;
     }
-    export_entry_file(second_pass_output.entry_ptrs, entry_file_name);
+    /*export_entry_file(second_pass_output.entry_ptrs, entry_file_name);*/
     export_external_file(second_pass_output.extern_file_data, external_file_name);
 
     free(entry_file_name);

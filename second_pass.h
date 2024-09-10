@@ -8,7 +8,7 @@ typedef struct SecondPassOutput{
     bool success;
     DynamicList parsed_lines_list;
     DynamicList errors_ptrs;
-    DynamicList entry_ptrs;
+    DynamicList entry_file_data;
     DynamicList extern_file_data;
     DynamicList direct_labels_ptrs;
 } SecondPassOutput;
