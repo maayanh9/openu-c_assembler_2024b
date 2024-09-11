@@ -4,7 +4,7 @@ BUILD_DIR	= build
 
 all: create_dir $(PROG_NAME)
 
-$(PROG_NAME): main.o preprocess.o first_pass.o second_pass.o dynamic_list.o output_files.o text_and_digits_handler.o
+$(PROG_NAME): main.o preprocess.o first_pass.o second_pass.o dynamic_list.o output_files.o text_and_digits_handler.o settings.o
 	gcc $(FLAGS) $(BUILD_DIR)/*.o -o $(BUILD_DIR)/$@
 
 main.o: main.c preprocess.h settings.h text_and_digits_handler.h \
@@ -26,6 +26,9 @@ output_files.o: output_files.c output_files.h second_pass.h first_pass.h \
 
 text_and_digits_handler.o: text_and_digits_handler.c \
  text_and_digits_handler.h
+
+settings.o: settings.c settings.h
+
 
 %.o:
 	gcc $(FLAGS) -c $< -o $(BUILD_DIR)/$@

@@ -178,13 +178,13 @@ bool a_valid_num(int num) {
     /* check if it is a signed int in the range can be storage on 15bits (2^15 /2 = 2^14 for positive and negative)*/
     return (num <= 16383) &&(num >= -16384);
 }
-bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instuction){
+bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instruction){
     char *file_line;
 
     file_line = malloc(LENGTH_OF_LINE_OBJECT_FILE);
     CHECK_ALLOCATION(file_line);
-    sprintf(file_line, "%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instuction));
-    printf("%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instuction));
+    sprintf(file_line, "%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instruction));
+    printf("%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instruction));
 
     insert_new_cell_into_dynamic_list(object_file, file_line);
     object_file->is_allocated = true;
@@ -267,10 +267,14 @@ bool insert_command(ParsedLine *line, DynamicList* object_file, AssemblyCommands
 
 bool insert_immediate(InstructionParameter src_or_dest, DynamicList* object_file, int line_number, int address) {
     int immediate_number = src_or_dest.Addressing.immediate;
-    return insert_number_to_object_file(immediate_number, line_number, object_file, address);
+    int encoding = add_element_to_encoding(a_r_e_fields[A], immediate_number,
+                BIT_STORAGE_STARTS_FOR_IMMEDIATE_ADDRESSING); /* adding both the 'a' field from a_r_e
+                                                                and the immediate addressing number*/
+    return insert_number_to_object_file(encoding, line_number, object_file, address);
 }
 
-bool insert_src_or_dest_addressing(InstructionParameter src_or_dest, DynamicList* object_file, int line_number, int address) {
+bool insert_src_or_dest_addressing(InstructionParameter src_or_dest, DynamicList* object_file, int line_number,
+                                    int address, SourceOrDest source_or_dest) {
     int addressing_method = src_or_dest.addressing_method;
     switch (addressing_method) {
         case IMMEDIATE:
@@ -290,6 +294,38 @@ bool insert_src_or_dest_addressing(InstructionParameter src_or_dest, DynamicList
     }
     return false;
 }
+bool are_both_register_addressing_modes(AddressingMethod src_addressing_method, AddressingMethod dest_addressing_method) {
+    return (src_addressing_method == INDIRECT_REGISTER || src_addressing_method == DIRECT_REGISTER) &&
+            (dest_addressing_method == INDIRECT_REGISTER || dest_addressing_method == DIRECT_REGISTER);
+}
+
+int get_register_encoding(int register_num, SourceOrDest source_or_dest, int current_encoding) {
+    switch (source_or_dest) {
+        case SOURCE:
+            return add_element_to_encoding(current_encoding, register_num, BIT_STORAGE_STARTS_FOR_SOURCE_REGISTER);
+        case DESTINATION:
+            return add_element_to_encoding(current_encoding, register_num, BIT_STORAGE_STARTS_FOR_DESTINATION_REGISTER);
+        default:
+            /*should not get there*/
+            return 0;
+    }
+}
+
+bool insert_register(int register_num, SourceOrDest source_or_dest, DynamicList* object_file, int address, int line_num) {
+    int encoding = a_r_e_fields[A];
+    encoding = get_register_encoding(register_num, source_or_dest, encoding);
+    return insert_number_to_object_file(encoding, line_num, object_file, address);
+
+}
+bool insert_two_registers(InstructionParameter src, InstructionParameter dest, DynamicList* object_file, int address, int line_num) {
+    const int source_register_num = src.Addressing.register_num;
+    const int dest_register_num = dest.Addressing.register_num;
+    int encoding = a_r_e_fields[A];
+    encoding = get_register_encoding(source_register_num, SOURCE, encoding);
+    encoding = get_register_encoding(dest_register_num, DESTINATION, encoding);
+
+    return insert_number_to_object_file(encoding, line_num, object_file, address);
+}
 
 bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file) {
     bool success = true;
@@ -297,20 +333,30 @@ bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList
     int address = line->mete_data.instruction_counter;
     int line_number = line->mete_data.instruction_counter;
     int num_of_operands = atoi(instructions_commands_and_addressing[command][3]);
-    int source = line->LineTypes.Instruction.source.addressing_method;
-    int dest = line->LineTypes.Instruction.dest.addressing_method;
+    int src_addressing = line->LineTypes.Instruction.source.addressing_method;
+    int dest_addressing = line->LineTypes.Instruction.dest.addressing_method;
+    InstructionParameter source = line->LineTypes.Instruction.source;
+    InstructionParameter dest = line->LineTypes.Instruction.dest;
 
     switch (num_of_operands) {
         case 0:
             return insert_command(line, object_file, command, address, -1, -1);
             break;
         case 1:
-            success = insert_command(line, object_file, command, address, -1, dest);
+            success = insert_command(line, object_file, command, address, -1, dest_addressing);
             address ++;
+            success &=insert_src_or_dest_addressing(dest, object_file, line_number, address, DESTINATION);
             break;
         case 2:
-            success = insert_command(line, object_file, command, address, source, dest);
+            success = insert_command(line, object_file, command, address, src_addressing, dest_addressing);
             address ++;
+            if(are_both_register_addressing_modes(src_addressing, dest_addressing))
+                success &= insert_two_registers(source, dest, object_file, address, line_number);
+            else {
+                success &= insert_src_or_dest_addressing(dest, object_file, line_number, address, SOURCE);;
+                address ++;
+                success &= insert_src_or_dest_addressing(dest, object_file, line_number, address, DESTINATION);;
+            }
             break;
         default:
             /*not excepted to get here*/
