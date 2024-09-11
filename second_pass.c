@@ -9,22 +9,27 @@
 #include "first_pass.h"
 #include "text_and_digits_handler.h"
 
-
+/* Table for symbols*/
 typedef enum Table {
     SYMBOLS_TABLE,
     ENTRY_TABLE,
     EXTERN_TABLE
 } Table;
 
+/* forward decleration. see real docs later */
 bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line, int data_section_begin_address);
 
+/* get entry or extern label */
 char* get_entry_or_extern_label(ParsedLine *parsed_entry_line) {
     return parsed_entry_line->LineTypes.Directive.DirectiveTypes.entry_or_extern;
 }
+
+/* get symbols table label */
 char *get_symbols_table_label(ParsedLine *line_with_label) {
     return line_with_label->label;
 }
 
+/* return true if label equals to this cell */
 bool label_equals_this_cell(ParsedLine *line_from_table, Table which_table, char* label) {
     if(which_table == SYMBOLS_TABLE) {
         return strcmp(label, get_symbols_table_label(line_from_table)) == 0;
@@ -32,6 +37,7 @@ bool label_equals_this_cell(ParsedLine *line_from_table, Table which_table, char
     return strcmp(label, get_entry_or_extern_label(line_from_table)) == 0;
 }
 
+/* return the extern instruction counter */
 int get_extern_instruction_counter(int instruction_counter, int how_many_parameters_for_command, SourceOrDest src_or_dst) {
 
     /*The first instruction line is for the command*/
@@ -41,8 +47,8 @@ int get_extern_instruction_counter(int instruction_counter, int how_many_paramet
     return instruction_counter;
 }
 
+/* return the found index or -1 if the index is not found*/
 int find_in_table(DynamicList table, char* element_to_find, Table which_table) {
-    /*return the found index or -1 if the index is not found*/
     int i;
     for(i = 0; i< table.list_length; i++) {
         ParsedLine *table_cell = (ParsedLine *)table.items[i];
@@ -53,6 +59,7 @@ int find_in_table(DynamicList table, char* element_to_find, Table which_table) {
     return -1;
 }
 
+/* return true if paramter is a direct adressing */
 bool is_a_direct_addressing(InstructionParameter src_or_dst) {
     if(src_or_dst.addressing_method == DIRECT) {
         return  true;
@@ -60,14 +67,17 @@ bool is_a_direct_addressing(InstructionParameter src_or_dst) {
     return false;
 }
 
+/* return true ifi is dst a direct addressing line */
 bool is_dest_a_direct_addressing(ParsedLine direct_line) {
     return is_a_direct_addressing(direct_line.LineTypes.Instruction.dest);
 }
 
+/* return true if source is direct addressing */
 bool is_source_a_direct_addressing(ParsedLine direct_line) {
     return is_a_direct_addressing(direct_line.LineTypes.Instruction.source);
 }
 
+/* find the instruction label in tables */
 bool find_instruction_label_in_tables(DynamicList symbols_table, DynamicList external_ptrs,
                    InstructionParameter direct_src_or_dest, int *symbol_address, int instruction_counter,
                    int how_many_parameters_for_command, SourceOrDest src_or_dst, bool * found_at_extern_table,
@@ -88,6 +98,7 @@ bool find_instruction_label_in_tables(DynamicList symbols_table, DynamicList ext
     return false;
 }
 
+/* find direct label in tables */
 bool find_direct_label_in_tables(DynamicList symbols_table, DynamicList external_ptrs, ParsedLine direct_line,
     SourceOrDest src_or_dest, int *symbol_address, bool * found_at_extern_table, ParsedLine** found_at_line) {
     switch (src_or_dest) {
@@ -105,6 +116,7 @@ bool find_direct_label_in_tables(DynamicList symbols_table, DynamicList external
     }
 }
 
+/* update entry of extern table */
 void update_entry_or_extern_table(DynamicList *entry_or_extern_file_data, int symbol_address, char* direct_label) {
     char *entry_or_extern_file_line = malloc(MAX_LEN_OF_LABEL + 6);
     CHECK_ALLOCATION(entry_or_extern_file_line);
@@ -113,8 +125,9 @@ void update_entry_or_extern_table(DynamicList *entry_or_extern_file_data, int sy
     entry_or_extern_file_data->is_allocated = true;
 }
 
+/* update direct addressing from symbols table or print errors,
+ * also creating the extern file data.*/
 bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList symbols_table, DynamicList external_ptrs, DynamicList direct_labels_ptrs, DynamicList *extern_file_data) {
-    /*also creating the extern file data. maybe separate  it or add a very good documentation*/
     int i;
     bool printed = false;
 
@@ -176,11 +189,13 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
     return true;
 }
 
+/* print an error message and chnage pointer value */
 void error_massage(char *entry_label, bool *printed_errors) {
     printf("entry: %s is not found at the symbols table.\n", entry_label);
     *printed_errors = true;
 }
 
+/* parse the entry table the output file format */
 bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *entry_file_data, DynamicList symbols_table) {
     int i;
     int found_at_index;
