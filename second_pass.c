@@ -181,11 +181,6 @@ bool a_valid_num(int num) {
 bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instuction){
     char *file_line;
 
-    bool number_overflow = false;
-    /*const int octal_number = convert_decimal_to_octal(decimal_instuction, &number_overflow);*/
-    if(number_overflow)
-        return false;
-
     file_line = malloc(LENGTH_OF_LINE_OBJECT_FILE);
     CHECK_ALLOCATION(file_line);
     sprintf(file_line, "%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instuction));
@@ -196,16 +191,20 @@ bool insert_line_to_object_file(DynamicList *object_file, int address, int decim
 
     return true;
 }
+bool insert_number_to_object_file(int number, int line_num, DynamicList* object_file, int address) {
+    if(!a_valid_num(number)) {
+        printf("line %d:\tnum: %d is larger than signed integer of 15bits.\n", line_num, number);
+        return false;
+    }
+    return insert_line_to_object_file(object_file, address, number);
+}
 
 bool insert_directive_data(int* data_numbers, int num_of_elements, int address, int line_num, DynamicList* object_file) {
     int i;
     for (i = 0; i<num_of_elements; i++) {
-        int current_number = data_numbers[i];
-        if(!a_valid_num(current_number)) {
-            printf("line %d:\tnum: %d is larger than signed integer of 15bits.\n", line_num, current_number);
+        if(! insert_number_to_object_file(data_numbers[i], line_num, object_file, address)) {
             return false;
         }
-        insert_line_to_object_file(object_file, address, current_number);
         address ++;
     }
     return true;
@@ -232,7 +231,7 @@ void handle_string_case(ParsedLine *line, DynamicList* object_file) {
     insert_directive_string(string, address, object_file);
 }
 
-bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file) {
+bool parse_directive_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file) {
     AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
     switch (directive_type) {
         case DATA:
@@ -249,14 +248,87 @@ bool convert_directive_line_to_binary(ParsedLine *line, DynamicList* object_file
     return true;
 }
 
+bool insert_command(ParsedLine *line, DynamicList* object_file, AssemblyCommands command, int address,
+    int src_addressing, int dest_addressing) {
+    /*insert command and addressing methods to object file.
+     *insert also the registers if it is a register addressing method.
+     * when using this method, values that are not in use (src/dest addressing) need be -1 to ignore them
+     */
+    int encoding = add_element_to_encoding(0, (int)command, BIT_STORAGE_STARTS_FOR_OPCODE);
+    if(src_addressing != -1) {
+        encoding = add_element_to_encoding(encoding, addressing_to_fit_object_file[src_addressing], BIT_STORAGE_STARTS_FOR_SOURCE_ADDRESSING_METHOD);
+    }
+    if(dest_addressing != -1) {
+        encoding = add_element_to_encoding(encoding, addressing_to_fit_object_file[dest_addressing], BIT_STORAGE_STARTS_FOR_DESTINATION_ADDRESSING_METHOD);
+    }
+    encoding = add_element_to_encoding(encoding, a_r_e_fields[0], BIT_STORAGE_STARTS_FOR_A_R_E_FIELDS);
+    return insert_line_to_object_file(object_file, address, encoding);
+}
+
+bool insert_immediate(InstructionParameter src_or_dest, DynamicList* object_file, int line_number, int address) {
+    int immediate_number = src_or_dest.Addressing.immediate;
+    return insert_number_to_object_file(immediate_number, line_number, object_file, address);
+}
+
+bool insert_src_or_dest_addressing(InstructionParameter src_or_dest, DynamicList* object_file, int line_number, int address) {
+    int addressing_method = src_or_dest.addressing_method;
+    switch (addressing_method) {
+        case IMMEDIATE:
+            return insert_immediate(src_or_dest, object_file, line_number, address);
+        case DIRECT:
+            break;
+        case DIRECT_REGISTER:
+            break;
+        case INDIRECT_REGISTER:
+            break;
+        case INVALID_OR_NOT_IN_USE:
+            /** TODO: delete this message*/
+            printf("invalid or not in use printed");
+            break;
+        default:
+            break;
+    }
+    return false;
+}
+
+bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file) {
+    bool success = true;
+    AssemblyCommands command = line->LineTypes.Instruction.command;
+    int address = line->mete_data.instruction_counter;
+    int line_number = line->mete_data.instruction_counter;
+    int num_of_operands = atoi(instructions_commands_and_addressing[command][3]);
+    int source = line->LineTypes.Instruction.source.addressing_method;
+    int dest = line->LineTypes.Instruction.dest.addressing_method;
+
+    switch (num_of_operands) {
+        case 0:
+            return insert_command(line, object_file, command, address, -1, -1);
+            break;
+        case 1:
+            success = insert_command(line, object_file, command, address, -1, dest);
+            address ++;
+            break;
+        case 2:
+            success = insert_command(line, object_file, command, address, source, dest);
+            address ++;
+            break;
+        default:
+            /*not excepted to get here*/
+            return false;
+    }
+    return success;
+}
+
+
 void convert_line_to_binary(DynamicList *object_file, ParsedLine *line, bool *success) {
     bool result = true;
     switch (line->line_type) {
         /* no need to check for ERROR_LINE, because the program will check for them before*/
         case DIRECTIVE_LINE:
-            result = convert_directive_line_to_binary(line, object_file);
+            result = parse_directive_line_to_object_file_pattern(line, object_file);
             break;
         case COMMAND_LINE:
+            result = parse_instruction_line_to_object_file_pattern(line, object_file);
             break;
         case EMPTY_OR_COMMENT_LINE:
             /*no need to parse*/

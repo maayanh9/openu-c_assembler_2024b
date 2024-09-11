@@ -22,11 +22,18 @@
 #define FILE_EXTENSION_ENTRY_FILE ".ent"
 
 #define LENGTH_OF_LINE_OBJECT_FILE 11 /* 4 digits for address + 1 for space + 5 for the word + 1 for \n*/
+
 #define BIT_STORAGE_STARTS_FOR_OPCODE 11
 #define BIT_STORAGE_STARTS_FOR_SOURCE_ADDRESSING_METHOD 7
 #define BIT_STORAGE_STARTS_FOR_DESTINATION_ADDRESSING_METHOD 3
 #define BIT_STORAGE_STARTS_FOR_A_R_E_FIELDS 0
 
+#define BIT_STORAGE_STARTS_FOR_SOURCE_REGISTER 6
+#define BIT_STORAGE_STARTS_FOR_DESTINATION_REGISTER 3
+
+
+static const int addressing_to_fit_object_file[4] = {1, 2, 4, 8}; /* 0001, 0010, 0100, 1000 in decimal */
+static const int a_r_e_fields[3] = {4, 2, 1}; /* set the right bit in the order on A=100, R=010, E=001 */
 
 static const char *instructions_commands_and_addressing[LEN_OF_COMMANDS_LIST][4] = {
     /*command, dst, src, how_many_parameters*/
@@ -107,8 +114,8 @@ typedef enum{
 typedef enum{
     IMMEDIATE,
     DIRECT,
-    DIRECT_REGISTER,
     INDIRECT_REGISTER,
+    DIRECT_REGISTER,
     INVALID_OR_NOT_IN_USE = -1
 } AddressingMethod;
 
