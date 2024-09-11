@@ -47,7 +47,7 @@ bool is_macro_end_statement_line(PreprocessParsedLine parsed_line){
         }
     }
     return false;
-};
+}
 
 /*If given line is a macro declaration line, return the macro name defined.
  *if this is not a macro declaration line, this will exist */

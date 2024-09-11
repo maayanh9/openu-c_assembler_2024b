@@ -8,19 +8,21 @@
 #include "dynamic_list.h"
 #include "first_pass.h"
 
-
+/* SeparateLineIntoWords contains words */
 typedef struct SeparateLineIntoWords
 {
     char* words[40];
     int words_counter;
 }SeparateLineIntoWords;
 
+/* add the next word */
 void add_next_word(SeparateLineIntoWords* separate_line, char* token_ptr){
     char* new_word = string_copy(token_ptr);
     separate_line->words[separate_line->words_counter] = new_word;
     separate_line->words_counter++;
 }
 
+/*handle the parsing of string directives */
 void handle_parsing_string_directive(SeparateLineIntoWords* separate_line, char* token_ptr){
     char* end_word_ptr;
     add_next_word(separate_line, token_ptr);
@@ -45,6 +47,7 @@ void handle_parsing_string_directive(SeparateLineIntoWords* separate_line, char*
 
 }
 
+/* saparate line into words */
 SeparateLineIntoWords separate_line_into_words(char *line){
     SeparateLineIntoWords separate_line;
     char *line_copy = string_copy(line);
@@ -66,6 +69,7 @@ SeparateLineIntoWords separate_line_into_words(char *line){
     return separate_line;
 }
 
+/* free all lines which are separate */
 void free_separate_line(SeparateLineIntoWords* separate_line) {
     int i;
     for (i = 0; i< separate_line->words_counter; i++) {
@@ -73,18 +77,22 @@ void free_separate_line(SeparateLineIntoWords* separate_line) {
     }
 }
 
+/* return true if a given word is a comment or a an empty line */
 bool is_comment_or_empty_line(SeparateLineIntoWords separate_word){
     if(separate_word.words_counter == 0 || separate_word.words[0][0] == ';')
         return true;
     return false;
 }
 
+/* return true if a give word has a label*/
 bool has_a_label(SeparateLineIntoWords separate_word){
     if(separate_word.words[0][strlen(separate_word.words[0]) - 1] == ':'){
         return true;
     }
     return false;
 }
+
+/* returns true if a given word is a directive */
 bool is_a_directive(char* next_unparsed_word){
     /* check if the word starts with a dot, does not check if it's a valid directive*/
     if(next_unparsed_word[0] == '.'){
@@ -93,6 +101,7 @@ bool is_a_directive(char* next_unparsed_word){
     return false;
 }
 
+/* returns which command it is, returns -1 if can know */
 int is_a_command_and_which(char* potential_command){
     int i;
     for(i = 0; i < LEN_OF_COMMANDS_LIST; i ++){
@@ -103,8 +112,8 @@ int is_a_command_and_which(char* potential_command){
     return -1;
 }
 
+/* return the directive num from AssemblyDirective enum if it is a valid directive or -1 if it is not there*/
 int which_directive(char* potential_directive){
-    /* return the directive num from AssemblyDirective enum if it is a valid directive or -1 if it is not there*/
     /*directive is the string after the '.' */
     char * directive = potential_directive + sizeof(char);
     int i;
@@ -116,10 +125,12 @@ int which_directive(char* potential_directive){
     return -1;
 }
 
+/* return true if a given word is the last word in a line, based on counts */
 bool is_the_last_word_in_this_line(int parsed_words_counter, int how_many_words_in_line){
     return (parsed_words_counter == how_many_words_in_line);
 }
 
+/* add invalid error line into the errors list, and changes the line type to error. */
 void error_line(ParsedLine* parsed_line, char* type, char* invalid_data, DynamicList *errors_ptrs){
     /*type: directive, label or command*/
     int line_counter = parsed_line->mete_data.line_counter;
@@ -130,21 +141,26 @@ void error_line(ParsedLine* parsed_line, char* type, char* invalid_data, Dynamic
     insert_new_cell_into_dynamic_list(errors_ptrs, parsed_line);
 }
 
+/* return true if a given directive call is valid */
 bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_many_words_in_line){
     return (directive_num != -1 && !is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line));
 }
 
+/* returns true if a given string starts with a command, false otherwise */
 bool starts_with_comma(char* data_parameters){
     if(strlen(data_parameters) == 0)
         return false;
     return data_parameters[0] == ',';
 }
 
+/* returns true if given string ends in comma */
 bool ends_with_comma(char* data_parameters){
     if(strlen(data_parameters) == 0)
         return false;
     return data_parameters[strlen(data_parameters) - 1] == ',';
 }
+
+/* return true if given string has only numbers and commas */
 bool has_only_numbers_and_commas(char* data_parameters){
     char* ptr = data_parameters;
     while(*ptr){
@@ -155,6 +171,8 @@ bool has_only_numbers_and_commas(char* data_parameters){
     }
     return true;
 }
+
+/* return true if data has a sequence of commas, false otherwise */
 bool have_sequence_of_commas(char* data_parameters){
     char* ptr = data_parameters;
     int comma_in_a_row_counter = 0;
@@ -172,6 +190,8 @@ bool have_sequence_of_commas(char* data_parameters){
     }
     return false;
 }
+
+/* return true if has a + or - sign after a comma */
 bool have_plus_or_minus_only_after_comma(char* data_parameters){
     char* ptr = data_parameters;
     bool comma_flag = true;
@@ -192,11 +212,14 @@ bool have_plus_or_minus_only_after_comma(char* data_parameters){
     }
     return true;
 }
+
+/* return true if the given data num parameters is valid, false otherwise */
 bool valid_data_num_parameters(char* data_parameters){
     return !ends_with_comma(data_parameters) && !starts_with_comma(data_parameters) && has_only_numbers_and_commas(data_parameters) 
     && !have_sequence_of_commas(data_parameters) && have_plus_or_minus_only_after_comma(data_parameters);
 }
 
+/* connect unparsed separate strings into a single string*/
 char* connect_unparsed_separate_strings(SeparateLineIntoWords separated_words, int parsed_words_ctr){
     /*Connect again the separate words easier parse*/
     char* connected_string = (char*)malloc(sizeof(char) * (MAX_LEN_LINE_ASSEMBLY_FILE));
@@ -209,6 +232,7 @@ char* connect_unparsed_separate_strings(SeparateLineIntoWords separated_words, i
     return connected_string;
 }
 
+/* insert the data numbers into the list  */
 bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameters){
     char* data_numbers_token = strtok(data_parameters, ",+");
     int next_num;
@@ -227,6 +251,7 @@ bool insert_data_numbers_into_list(ParsedLine* parsed_line, char* data_parameter
     return true;
 }
 
+/* insert the data drivertive into parsed line */
 bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs){
     /* parse the .data parameters (check if its valid) 
     and insert it into the parsed_line struct*/
