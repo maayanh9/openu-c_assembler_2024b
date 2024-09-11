@@ -666,7 +666,7 @@ void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, I
     }
 }
 
-
+/**/
 bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *direct_labels_ptrs){
     char* instruction_parameters_in_one_word;
     char *error_note = NULL;
@@ -699,7 +699,14 @@ bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line,
     return true;
 }
 
-
+/* Parse a single line
+ *
+ * @counters - holds metadata about the lines
+ * @symbols_table - holds information of symbols encoutered during the parsing
+ * @errors_ptrs - list of pointers to lines with errors in them
+ * @entry_ptrs - lisst of pointers to lines with .entry decleration statements.
+ * @external_ptrs - list of pointers to lines with .extern decleration statements.
+ */
 ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_table, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs, DynamicList *direct_labels_ptrs, ParsedLine *parsed_line){
     SeparateLineIntoWords separated_words = separate_line_into_words(line);
     int parsed_words_ctr = 0;
@@ -745,21 +752,7 @@ finished_parsing_line:
     return parsed_line;
 }
 
-void free_parsed_data_output_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs){
-    /** TODO: get the struct instead */
-    free_dynamic_list(&parsed_lines_list);
-    free_dynamic_list(&symbols_table);
-    free_dynamic_list(&errors_ptrs);
-    free_dynamic_list(&external_ptrs);
-    free_dynamic_list(&entry_ptrs);
-    free_dynamic_list(&direct_labels_ptrs);
-}
-
-/* struct for passing data from first_pass function to second_pass function
- * and then to the export_output_assembler_files function
- */
-
-
+/* Initialize output lists*/
 void initialize_first_pass_output_lists(FirstPassOutput *first_pass_output) {
     initialize_dynamic_list(&first_pass_output->parsed_lines_list, sizeof(ParsedLine), 10);
     initialize_dynamic_list(&first_pass_output->symbols_table, sizeof(ParsedLine *), 10);
@@ -771,6 +764,7 @@ void initialize_first_pass_output_lists(FirstPassOutput *first_pass_output) {
     first_pass_output->data_section_begin_address = 0;
 }
 
+/* Initialize the counters */
 void initialize_counters(LineMetaData *counters) {
     counters->instruction_counter = INITIAL_INSTRUCTION_ADDRESS;
     counters->data_counter = 0;
@@ -779,6 +773,7 @@ void initialize_counters(LineMetaData *counters) {
     counters->counter_type = INSTRUCTION_COUNTER;
 }
 
+/* takes a given input file name and parses all the lines inside the file into a list of ParsedLine structs */
 FirstPassOutput first_pass(const char *input_file_name){
     bool result = false;
     FILE *input_file = fopen(input_file_name, "r");

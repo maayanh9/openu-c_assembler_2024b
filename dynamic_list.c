@@ -5,7 +5,7 @@
 #include "dynamic_list.h"
 #include "text_and_digits_handler.h"
 
-
+/* Initialize the minimum resources for a gien dynamic list*/
 void initialize_dynamic_list(DynamicList* list, int item_size, int num_of_elements){
     list->item_size = item_size;
     list->list_length = 0;
@@ -16,6 +16,7 @@ void initialize_dynamic_list(DynamicList* list, int item_size, int num_of_elemen
     list->max_capacity = num_of_elements;
 }
 
+/* increase the capacity of the list*/
 void bigger_capacity(DynamicList* list){
     /*Double the capacity of the dynamic list by 2*/
     list->max_capacity *= 2;
@@ -23,6 +24,7 @@ void bigger_capacity(DynamicList* list){
     CHECK_ALLOCATION(list->items);
 }
 
+/* insert given cell value to the end of the list */
 void insert_new_cell_into_dynamic_list(DynamicList* list, void* new_cell){
     /* insert value at the end of the list*/
     if( list->list_length == list->max_capacity)
@@ -31,6 +33,7 @@ void insert_new_cell_into_dynamic_list(DynamicList* list, void* new_cell){
     list->list_length++;
 }
 
+/* Free all resources allocated to given list */
 void free_dynamic_list(DynamicList* list){
     if((*list).is_allocated == true){
         int i;
