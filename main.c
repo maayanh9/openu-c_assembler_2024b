@@ -7,6 +7,9 @@
 #include "second_pass.h"
 #include "output_files.h"
 
+/* Assemble a pre-processed input file name
+ * @input_file_name should be pre-processed
+ */
 bool assembler(const char *input_file_name){
     FirstPassOutput first_pass_output;
     SecondPassOutput second_pass_output;
@@ -27,7 +30,10 @@ bool assembler(const char *input_file_name){
     return export_output_assembler_files(second_pass_output, input_file_name);
 }
 
-void assembler_process(const char *input_file_name){
+/* Pre process a given file, then assemble the pre process output
+ * @input_file_name to pre process and assemble
+ */
+void pre_process_and_assemble(const char *input_file_name){
     char* am_extention;
     bool preprocess_macro_done_successfully = preprocess_macro(input_file_name);
 
@@ -49,6 +55,7 @@ void assembler_process(const char *input_file_name){
     free(am_extention);
 }
 
+/* Validates the input of the user to make sure he entered at-least one file name */
 void check_if_user_inserted_files(int argc){
     if (argc == 1){
         /*No input files inserted*/
@@ -57,16 +64,21 @@ void check_if_user_inserted_files(int argc){
     }
 }
 
+/* Iterate over all files given as input to the program and assemble them
+ * @argc: expected to be passed from main
+ * @argv: expected to be passed from main
+ */
 void process_all_the_input_files(int argc, const char *argv[]){
     int i;
     check_if_user_inserted_files(argc);
     for (i = 1; i < argc; i++)
     {
         /*all the assembler process for one input file at a time*/
-        assembler_process(argv[i]);
+        pre_process_and_assemble(argv[i]);
     }
 }
 
+/* Entry point of the program */
 int main(int argc, const char *argv[]){
     process_all_the_input_files(argc, argv);
     return 0;

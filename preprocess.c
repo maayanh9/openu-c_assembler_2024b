@@ -256,8 +256,11 @@ void free_macro_list(Macro* macro_list, size_t macro_count) {
     free(macro_list);
 }
 
-
-bool parse_file_with_macros(const char *input_file_name){
+/* Pre-Processes a given input file for assembly, does not include actual assembly.
+ * The output of the pre process will be saved to a file with the same base name but with the extension of ".am"
+ * @input_file_name to pre-process.
+ */
+bool preprocess_macro(const char *input_file_name){
     bool result = false;
     FILE *input_file = fopen(input_file_name, "r");
     FILE *output_file;
@@ -308,10 +311,3 @@ cleanup:
     return result;
 }
 
-bool preprocess_macro(const char *input_file_name){
-    /* The main function of the preprocessor, used in main.c
-    error_flag will change to "true" if there are errors in the input*/
-    /*TODO: handle the error flag instead of the exit(1)*/
-    bool ans = parse_file_with_macros(input_file_name);
-    return ans;
-}
