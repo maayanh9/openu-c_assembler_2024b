@@ -45,6 +45,10 @@ bool check_if_file_opened_successfully(FILE *file){
 int add_element_to_encoding(int current_encoding, int element, int where_to_insert) {
     return current_encoding | (element << where_to_insert);
 }
+/*
+int mask_12_bits(int number) {
+    return number & 4095;*/ /* equals to 1111 1111 1111 in binary */
+/*}*/
 
 int mask_15_bits(int number) {
     return number & 32767; /*equals to 0111 1111 1111 1111 in binary*/

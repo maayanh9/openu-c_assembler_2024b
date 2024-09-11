@@ -174,10 +174,18 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
     }
     return true;
 }
-bool a_valid_num(int num) {
+bool a_valid_num(int num, int bits) {
     /* check if it is a signed int in the range can be storage on 15bits (2^15 /2 = 2^14 for positive and negative)*/
-    return (num <= 16383) &&(num >= -16384);
+    if(bits == 15) {
+        return (num <= 16383) &&(num >= -16384);
+    }
+
+    /* same but for 12 bits*/
+    if(bits == 12)
+        return (num <= 2047) && (num >= -2048);
+    return false;
 }
+
 bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instruction){
     char *file_line;
 
@@ -192,7 +200,7 @@ bool insert_line_to_object_file(DynamicList *object_file, int address, int decim
     return true;
 }
 bool insert_number_to_object_file(int number, int line_num, DynamicList* object_file, int address) {
-    if(!a_valid_num(number)) {
+    if(!a_valid_num(number, 15)) {
         printf("line %d:\tnum: %d is larger than signed integer of 15bits.\n", line_num, number);
         return false;
     }
@@ -267,10 +275,15 @@ bool insert_command(ParsedLine *line, DynamicList* object_file, AssemblyCommands
 
 bool insert_immediate(InstructionParameter src_or_dest, DynamicList* object_file, int line_number, int address) {
     int immediate_number = src_or_dest.Addressing.immediate;
-    int encoding = add_element_to_encoding(a_r_e_fields[A], immediate_number,
+    int encoding;
+    if (!a_valid_num(immediate_number, 12)) {
+        printf("num: %d at line: %d is larger than 2047 or smaller than -2048. please insert number inside the range.\n", immediate_number, line_number);
+        return false;
+    }
+    encoding = add_element_to_encoding(a_r_e_fields[A], immediate_number,
                 BIT_STORAGE_STARTS_FOR_IMMEDIATE_ADDRESSING); /* adding both the 'a' field from a_r_e
                                                                 and the immediate addressing number*/
-    return insert_number_to_object_file(encoding, line_number, object_file, address);
+    return insert_line_to_object_file(object_file, address, encoding);
 }
 
 bool insert_src_or_dest_addressing(InstructionParameter src_or_dest, DynamicList* object_file, int line_number,
@@ -315,8 +328,8 @@ bool insert_register(int register_num, SourceOrDest source_or_dest, DynamicList*
     int encoding = a_r_e_fields[A];
     encoding = get_register_encoding(register_num, source_or_dest, encoding);
     return insert_number_to_object_file(encoding, line_num, object_file, address);
-
 }
+
 bool insert_two_registers(InstructionParameter src, InstructionParameter dest, DynamicList* object_file, int address, int line_num) {
     const int source_register_num = src.Addressing.register_num;
     const int dest_register_num = dest.Addressing.register_num;
@@ -331,7 +344,7 @@ bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList
     bool success = true;
     AssemblyCommands command = line->LineTypes.Instruction.command;
     int address = line->mete_data.instruction_counter;
-    int line_number = line->mete_data.instruction_counter;
+    int line_number = line->mete_data.line_counter;
     int num_of_operands = atoi(instructions_commands_and_addressing[command][3]);
     int src_addressing = line->LineTypes.Instruction.source.addressing_method;
     int dest_addressing = line->LineTypes.Instruction.dest.addressing_method;
@@ -353,7 +366,7 @@ bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList
             if(are_both_register_addressing_modes(src_addressing, dest_addressing))
                 success &= insert_two_registers(source, dest, object_file, address, line_number);
             else {
-                success &= insert_src_or_dest_addressing(dest, object_file, line_number, address, SOURCE);;
+                success &= insert_src_or_dest_addressing(source, object_file, line_number, address, SOURCE);;
                 address ++;
                 success &= insert_src_or_dest_addressing(dest, object_file, line_number, address, DESTINATION);;
             }
