@@ -8,7 +8,7 @@
 #include "dynamic_list.h"
 #include "first_pass.h"
 
-/* SeparateLineIntoWords contains words */
+/* SeparateLineIntoWords contains words which are used for line parsing */
 typedef struct SeparateLineIntoWords
 {
     char* words[40];
