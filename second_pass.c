@@ -415,10 +415,7 @@ bool insert_src_or_dest_addressing(InstructionParameter src_or_dest_instruction,
             return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, instruction_address, line_number);
         case INDIRECT_REGISTER:
             return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, instruction_address, line_number);
-        case INVALID_OR_NOT_IN_USE:
-            /** TODO: delete this message*/
-            printf("invalid or not in use printed");
-            break;
+
         default:
             break;
     }
@@ -501,8 +498,6 @@ bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
      * the function returns:    true if there are errors
      *                          and false if there are not
      */
-
-    /** TODO: add it to the first pass*/
 
     int i;
     if(errors_ptrs.list_length == 0) {

@@ -849,8 +849,6 @@ FirstPassOutput first_pass(const char *input_file_name){
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
-        /** TODO: check for data exeeded 4096 or the number they asked */
-        /** TODO: check for \n for lines larger than 81 */
         ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
         CHECK_ALLOCATION(parsed_line);
         first_pass_output.capacity_needed_for_object_file += counters.space_to_keep_for_current_line;

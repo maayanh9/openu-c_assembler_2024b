@@ -62,7 +62,6 @@ char* find_macro_name(char* line){
         strcpy(macro_name, macr_name_ptr);
     }
     else{
-        /*TODO: check if you need to not exit and return all errors*/
         printf("Missing of macro name\n");
         exit(1);
     }
@@ -158,7 +157,6 @@ void add_macro_to_macros_list(PreprocessParsedLine parsed_line, Macro** macro_li
 
 /* Classify if a given line is macro call statement */
 bool is_it_a_macro_call(Macro** macro_list, int last_index_inserted_to_macro_list, PreprocessParsedLine parsed_line){
-    /*TODO: separate to valid macro call and check macro statement*/
     if(parsed_line.how_many_elements_in_line != 1)
         /*according to the course forum, there should not be more word after macro call */
         return false;
@@ -201,7 +199,6 @@ bool is_in_first_macro_line(Macro** macro_list, int last_index_inserted_to_macro
 }
 
 /* insert a given line to the latest macro in a given macro list */
-/*TODO: remove macro_list and last index inserted, pass last macro pointer directly*/
 void insert_line_into_the_latest_macro(char* line, Macro** macro_list, int last_index_inserted_to_macro_list){
         Node *line_node = create_new_line_node(line);
         if(is_in_first_macro_line(macro_list, last_index_inserted_to_macro_list)){
@@ -308,7 +305,6 @@ bool preprocess_macro(const char *input_file_name){
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
         PreprocessParsedLine parsed_line = preprocessor_parse_line(line);
-        /** TODO: simplify last macro usage, pass around a pointer to the last macro only */
         line_state = transition_line_state(line_state, parsed_line, &macro_list, last_index_inserted_to_macro_list);
         switch (line_state){
             case REGULAR_LINE:
