@@ -6,7 +6,6 @@
 
 typedef struct SecondPassOutput{
     bool success;
-    DynamicList errors_ptrs;
     DynamicList parsed_lines_list;
     DynamicList entry_file_data;
     DynamicList extern_file_data;

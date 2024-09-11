@@ -1,4 +1,4 @@
-FLAGS		= -ansi -pedantic -Wall -g -lm
+FLAGS		= -ansi -pedantic -Wall -g
 PROG_NAME 	= assembler
 BUILD_DIR	= build
 

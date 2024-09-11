@@ -43,4 +43,5 @@ void free_dynamic_list(DynamicList* list){
     }
     free(list->items);
     list->items = NULL;
+    list->list_length = 0;
 }

@@ -237,7 +237,7 @@ bool a_valid_num(int num, int bits) {
 bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instruction){
     char *file_line;
 
-    file_line = malloc(LENGTH_OF_LINE_OBJECT_FILE);
+    file_line = malloc(LENGTH_OF_LINE_OBJECT_FILE + 2);
     CHECK_ALLOCATION(file_line);
     sprintf(file_line, "%04d %05o\n", address, (unsigned int)mask_15_bits(decimal_instruction));
 
@@ -517,8 +517,6 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
     int data_size = first_pass_output.capacity_needed_for_object_file - instruction_size;
     sprintf(second_pass_output.first_line_object_file, "% 4d %d\n", instruction_size, data_size);
 
-    second_pass_output.parsed_lines_list = first_pass_output.parsed_lines_list;
-    second_pass_output.errors_ptrs = first_pass_output.errors_ptrs;
     second_pass_output.success = true;
     initialize_dynamic_list(&second_pass_output.extern_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6), first_pass_output.external_ptrs.list_length); /*to insert directly the output file of the extern*/
     initialize_dynamic_list(&second_pass_output.entry_file_data, sizeof(char) * (MAX_LEN_OF_LABEL + 6), first_pass_output.entry_ptrs.list_length); /*to insert directly the output file of the entry*/
@@ -554,6 +552,8 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     free_dynamic_list(&first_pass_output.external_ptrs);
     free_dynamic_list(&first_pass_output.entry_ptrs);
     free_dynamic_list(&first_pass_output.errors_ptrs);
+    free_dynamic_list(&first_pass_output.parsed_lines_list);
+
 
     second_pass_output.success = result;
     return second_pass_output;
