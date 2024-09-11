@@ -121,7 +121,8 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                 update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.source.Addressing.Direct.direct_label);
             }
 
-            direct_line->LineTypes.Instruction.source.Addressing.Direct.label_counter = symbol_address;
+            /*direct_line->LineTypes.Instruction.source.Addressing.Direct.label_counter = symbol_address;*/
+            /** HERE: i need to fix*/
 
         }
 

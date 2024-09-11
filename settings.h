@@ -126,7 +126,7 @@ typedef struct InstructionParameter{
     
 } InstructionParameter;
 
-typedef struct ParsedLine{
+struct ParsedLine{
     LineMetaData mete_data;
     LineType line_type;
     union LineTypes{
@@ -153,7 +153,7 @@ typedef struct ParsedLine{
     HasLabel has_label;
     char label[MAX_LEN_OF_LABEL + 1];
 
-}ParsedLine;
+};
 
 
 #endif
