@@ -31,6 +31,7 @@
 #define BIT_STORAGE_STARTS_FOR_SOURCE_REGISTER 6
 #define BIT_STORAGE_STARTS_FOR_DESTINATION_REGISTER 3
 #define BIT_STORAGE_STARTS_FOR_IMMEDIATE_ADDRESSING 3
+#define BIT_STORAGE_STARTS_FOR_DIRECT_ADDRESSING 3
 
 extern const int addressing_to_fit_object_file[4];
 extern const char* directives_list[LEN_OF_DIRECTIVE_LIST];
@@ -119,7 +120,7 @@ typedef struct InstructionParameter{
         struct{
             char direct_label[MAX_LEN_OF_LABEL];
             DirectLabelType label_type;
-            ParsedLine* reference_line;
+            int label_counter;
         } Direct;
         int register_num;
     } Addressing;
