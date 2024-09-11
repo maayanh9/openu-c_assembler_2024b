@@ -5,6 +5,7 @@
 #include "preprocess.h"
 #include "text_and_digits_handler.h"
 
+/* Represents different states a single pre-processed line can be in*/
 typedef enum {
     REGULAR_LINE,
     MACR_CREATION_CALL,
@@ -13,12 +14,14 @@ typedef enum {
     CALLED_A_MACRO
 } LineMacroState;
 
+/* Represents a pre-processing macro*/
 typedef struct Macro{
     char macro_name[MAX_LEN_MACRO_NAME];
     Node *first_line;
     Node *last_line;
 } Macro;
 
+/* Represents a single line that passed pre-processing */
 typedef struct PreprocessParsedLine
 {
     char line[MAX_LEN_LINE_ASSEMBLY_FILE];
@@ -26,13 +29,14 @@ typedef struct PreprocessParsedLine
     char first_word_in_line[MAX_LEN_OF_A_SINGLE_WORD];
 } PreprocessParsedLine;
 
-
+/* Classifies if a given parsed line is a line at which a macro is defined */
 bool is_macro_declaration_line(PreprocessParsedLine parsed_line){
     if(strcmp(parsed_line.first_word_in_line, "macr") == 0)
         return true;
     return false;
 }
 
+/* Classifies if a given parsed line as an end of a macro definition */
 bool is_macro_end_statement_line(PreprocessParsedLine parsed_line){
     if(strcmp(parsed_line.first_word_in_line, "endmacr") == 0){
         if (parsed_line.how_many_elements_in_line == 1)
@@ -43,9 +47,10 @@ bool is_macro_end_statement_line(PreprocessParsedLine parsed_line){
         }
     }
     return false;
-}
+};
 
-
+/*If given line is a macro declaration line, return the macro name defined.
+ *if this is not a macro declaration line, this will exist */
 char* find_macro_name(char* line){
     char *line_copy = string_copy(line);
     char* macr_name_ptr = strtok(line_copy, " \t\r\n");
@@ -65,6 +70,9 @@ char* find_macro_name(char* line){
     return macro_name;
 }
 
+/* count the number of whitespace-delimited items in a given line.
+ ** whitespace chareters include spaces, newlines, carrige return and tabs
+ */
 int check_how_many_elements_in_line(const char *line){
     char *line_copy = string_copy(line);
     int c = 0;
@@ -78,6 +86,9 @@ int check_how_many_elements_in_line(const char *line){
     return c;
 }
 
+/*
+ * Validate that a given parsed line passes the macro line checks
+ */
 bool validation_check_of_macro_line(PreprocessParsedLine parsed_line){
     char* line_copy = string_copy(parsed_line.line);
     char* macr_name_ptr = strtok(line_copy, " \t\r\n");
@@ -97,6 +108,7 @@ bool validation_check_of_macro_line(PreprocessParsedLine parsed_line){
     return true;
 }
 
+/* Initialize macro list values*/
 void initialize_macro_list_values(Macro** macro_list, int last_index_inserted_to_macro_list){
 
     int macro_list_len = last_index_inserted_to_macro_list + 1;
@@ -108,12 +120,14 @@ void initialize_macro_list_values(Macro** macro_list, int last_index_inserted_to
     memset((*macro_list)[last_index_inserted_to_macro_list].macro_name, 0, MAX_LEN_MACRO_NAME);
 }
 
+/* add the macro to the macro list*/
 void insert_new_macro_to_the_macro_list(char* macro_name, Macro** macro_list, int *last_index_inserted_to_macro_list){
     *last_index_inserted_to_macro_list += 1;
     initialize_macro_list_values(macro_list, *last_index_inserted_to_macro_list);
     strcpy((*macro_list)[*last_index_inserted_to_macro_list].macro_name, macro_name);
 }
 
+/* find the offset of a word in a given macro list*/
 int search_index_in_macr_names(char* word, Macro** macro_list, int last_index_inserted_to_macro_list){
     /*return the index of "word" the macro statement or -1 if "word" is not in macro_list*/
     int i;
@@ -125,6 +139,7 @@ int search_index_in_macr_names(char* word, Macro** macro_list, int last_index_in
     return -1;
 }
 
+/* Add a macro definition to the macros list */
 void add_macro_to_macros_list(PreprocessParsedLine parsed_line, Macro** macro_list, int *last_index_inserted_to_macro_list){
     char* macro_name;
     if(!validation_check_of_macro_line(parsed_line)){
@@ -141,6 +156,7 @@ void add_macro_to_macros_list(PreprocessParsedLine parsed_line, Macro** macro_li
     free(macro_name);
 }
 
+/* Classify if a given line is macro call statement */
 bool is_it_a_macro_call(Macro** macro_list, int last_index_inserted_to_macro_list, PreprocessParsedLine parsed_line){
     /*TODO: separate to valid macro call and check macro statement*/
     if(parsed_line.how_many_elements_in_line != 1)
@@ -152,7 +168,7 @@ bool is_it_a_macro_call(Macro** macro_list, int last_index_inserted_to_macro_lis
     return false;
 }
 
-
+/* Resolve the macro call, and replace the line with the macro lines */
 void insert_macro_lines_instead_of_the_macro_call(char* macro_name, Macro** macro_list, int last_index_inserted_to_macro_list, FILE* output_file){
     Node *macr_line;
     int macro_name_index = search_index_in_macr_names(macro_name, macro_list, last_index_inserted_to_macro_list);
@@ -168,6 +184,7 @@ void insert_macro_lines_instead_of_the_macro_call(char* macro_name, Macro** macr
     }
 }
 
+/* create a node from a given line */
 Node *create_new_line_node(char* line){
     Node *line_node = (Node *)malloc(sizeof(Node));
     CHECK_ALLOCATION(line_node);
@@ -178,10 +195,12 @@ Node *create_new_line_node(char* line){
     return line_node;
 }
 
-
+/* Is the node empty */
 bool is_in_first_macro_line(Macro** macro_list, int last_index_inserted_to_macro_list){
     return (*macro_list)[last_index_inserted_to_macro_list].first_line == NULL;
 }
+
+/* insert a given line to the latest macro in a given macro list */
 /*TODO: remove macro_list and last index inserted, pass last macro pointer directly*/
 void insert_line_into_the_latest_macro(char* line, Macro** macro_list, int last_index_inserted_to_macro_list){
         Node *line_node = create_new_line_node(line);
@@ -197,6 +216,7 @@ void insert_line_into_the_latest_macro(char* line, Macro** macro_list, int last_
 
 }
 
+/* insert tne first word in a line to a given parsed line */
 void insert_first_word_in_line_into_parsed_line_struct(const char* line, PreprocessParsedLine* parsed_line){
     char* line_copy = string_copy(line);
     char* first_word_token = strtok(line_copy, " \t\r\n");
@@ -205,6 +225,7 @@ void insert_first_word_in_line_into_parsed_line_struct(const char* line, Preproc
     free(line_copy);
 }
 
+/* Parse a single line into a struct which will be passed around */
 PreprocessParsedLine preprocessor_parse_line(const char* line){
     PreprocessParsedLine parsed_line;
     insert_first_word_in_line_into_parsed_line_struct(line, &parsed_line);
@@ -213,7 +234,10 @@ PreprocessParsedLine preprocessor_parse_line(const char* line){
     return parsed_line;
 }
 
-
+/* Transition the state of a macro line based on the parsed line
+ *
+ *  @macro_list: a collection of existing macros
+ */
 LineMacroState transition_line_state(LineMacroState last_line_state, PreprocessParsedLine parsed_line, Macro** macro_list, int last_index_inserted_to_macro_list){
     if(last_line_state == INSIDE_THE_MACRO || last_line_state == MACR_CREATION_CALL){
         if (is_macro_end_statement_line(parsed_line))
@@ -235,6 +259,8 @@ LineMacroState transition_line_state(LineMacroState last_line_state, PreprocessP
     return REGULAR_LINE;
     
 }
+
+/* free all resources allocated for a given macro object */
 void free_one_macro_statement(Macro* one_macro) {
     Node* next_macr;
     Node* current_macr= one_macro-> first_line;
@@ -248,6 +274,7 @@ void free_one_macro_statement(Macro* one_macro) {
     }
 }
 
+/* free all memory allocated in a given macro list */
 void free_macro_list(Macro* macro_list, size_t macro_count) {
     int i;
     for (i = 0; i < macro_count; i++) {
