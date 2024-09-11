@@ -251,10 +251,12 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     return answer;
 }
 
+/* return true if valid string parameter */
 bool valid_string_parameter(char* string_context){
     return (strlen(string_context) > 1 && string_context[0] == '\"' && string_context[strlen(string_context) - 1] == '\"');
 }
 
+/* insert the string directive into the parsed line*/
 bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, char* line){
     if(valid_string_parameter(separated_words.words[*parsed_words_ctr])){
         char* ascii_string = separated_words.words[*parsed_words_ctr] + 1; /* the ascii string without the " at the beginning*/
@@ -269,6 +271,8 @@ bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, 
     }
     return true;
 }
+
+/* check if string contains only letters and numbers */
 bool string_contains_only_letters_and_numbers(char* string){
     char* letter_ptr = string;
     while (*letter_ptr != '\0'){
@@ -280,6 +284,7 @@ bool string_contains_only_letters_and_numbers(char* string){
     return true;
 }
 
+/* is a dump label name */
 bool is_a_dup_label_name(char* label, DynamicList symbols_table){
     int i;
     for(i = 0; i< symbols_table.list_length; i++){
@@ -292,6 +297,7 @@ bool is_a_dup_label_name(char* label, DynamicList symbols_table){
     return false;
 }
 
+/* is given label valid*/
 bool is_valid_label(char* label, DynamicList symbols_table, int parsed_words_ctr, int how_many_words_in_line){
     if(!string_contains_only_letters_and_numbers(label) || is_a_dup_label_name(label, symbols_table) || is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line) || strlen(label) > MAX_LEN_OF_LABEL){
         return false;
@@ -299,6 +305,7 @@ bool is_valid_label(char* label, DynamicList symbols_table, int parsed_words_ctr
     return true;
 }
 
+/* return treu if given value is a duplicate */
 bool a_duplicate(char* label, DynamicList entry_or_extern_ptrs){
     int i;
     for(i = 0; i < entry_or_extern_ptrs.list_length; i++){
@@ -311,10 +318,12 @@ bool a_duplicate(char* label, DynamicList entry_or_extern_ptrs){
     return false;
 }
 
+/* duplicate the label of extern or entry statement */
 bool duplicate_label_of_extern_or_entry(char* label, DynamicList entry_ptrs, DynamicList external_ptrs){
     return a_duplicate(label, entry_ptrs) || a_duplicate(label, external_ptrs);
 }
 
+/* return true if valid entry or extern parameter */
 bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbols_table, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList entry_ptrs, DynamicList external_ptrs){
     if(parsed_line->has_label == HAS_LABEL){ /* ignore label for .extern and .entry */
         if(is_valid_label(parsed_line->label, symbols_table, parsed_words_ctr, separated_words.words_counter))
@@ -327,6 +336,7 @@ bool valid_entry_or_extern_parameter(ParsedLine* parsed_line, DynamicList symbol
                 && !duplicate_label_of_extern_or_entry(separated_words.words[parsed_words_ctr], entry_ptrs, external_ptrs);
 }
 
+/* Insert entry or extern directive into parsed line or error */
 bool insert_entry_or_extern_directive_into_parsed_line_or_error(ParsedLine* parsed_line, int* parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList symbols_table, DynamicList entry_ptrs, DynamicList external_ptrs){
     if(valid_entry_or_extern_parameter(parsed_line, symbols_table, *parsed_words_ctr, separated_words, entry_ptrs, external_ptrs)){
         strcpy(parsed_line->LineTypes.Directive.DirectiveTypes.entry_or_extern, separated_words.words[*parsed_words_ctr]);
@@ -341,6 +351,7 @@ bool insert_entry_or_extern_directive_into_parsed_line_or_error(ParsedLine* pars
     }
 }
 
+/* Insert the directive paramters */
 bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs, DynamicList symbols_table){
     AssemblyDirective directive_type = parsed_line->LineTypes.Directive.directive_type;
     bool answer = true;
@@ -372,6 +383,7 @@ bool insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr,
     return answer;
 }
 
+/* insert directive paramters only if passed validation */
 bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, int* parsed_words_ctr, DynamicList *symbols_table, int line_counter, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *entry_ptrs, DynamicList *external_ptrs){
     int directive_num = which_directive(separated_words.words[*parsed_words_ctr]);
     parsed_line->line_type = DIRECTIVE_LINE;
@@ -390,11 +402,13 @@ bool check_validation_and_insert_directive_parameters(ParsedLine* parsed_line, i
     }
 }
 
+/* returns true if should ingnore lable, false otherwise */
 bool ignore_label(char* the_word_after_label){
     return (strcmp(the_word_after_label, ".extern") == 0 || strcmp(the_word_after_label, ".entry") == 0);
 }
 
 
+/* Check the validation of parsed line and insert the label data */
 bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *symbols_table, int line_counter, int words_in_line_counter, DynamicList *errors_ptrs){
     
     /*Copy the label without the ':' */
@@ -420,6 +434,8 @@ bool check_validation_and_insert_label_data(ParsedLine* parsed_line, int* parsed
     }
     
 }
+
+/*return true if given parameters have more then one comma */
 bool more_than_one_comma(char* parameters){
     char* ptr = parameters;
     int comma_ctr = 0;
@@ -433,6 +449,8 @@ bool more_than_one_comma(char* parameters){
     }
     return false;
 }
+
+/* get the words out of a parameters */
 SeparateLineIntoWords instruction_parameters(char* parameters){
     SeparateLineIntoWords parsed_parameters;
     char* parameters_copy = string_copy(parameters);
@@ -450,6 +468,7 @@ SeparateLineIntoWords instruction_parameters(char* parameters){
     return parsed_parameters;
 }
 
+/* validate the parameters of a parsed line */
 bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* parameters, DynamicList *errors_ptrs){
 
     if(ends_with_comma(parameters)){
@@ -472,7 +491,7 @@ bool first_check_valid_parameters_or_error_line(ParsedLine* parsed_line, char* p
     return true;
 }
 
-
+/*return true if a given parameter is a register */
 int is_register(char* parameter, char** error_note){
     /* -1 for invalid register name, -2 for not a register*/
     char* ptr = parameter;
@@ -505,6 +524,7 @@ bool is_direct(char* parameter){
     return string_contains_only_letters_and_numbers(parameter);
 }
 
+/* return if given number is immediate */
 bool is_immediate(char* parameter){
     char* ptr = parameter;
     if(*ptr != '#')
@@ -529,7 +549,9 @@ bool is_immediate(char* parameter){
     
     return true;
 }
-int export_immediate_num(char* parameter){
+
+/* get the number from the paramter */
+int get_immediate_num(char* parameter){
     char* ptr = parameter;
     
     /*skip the # at the beginning*/
@@ -541,6 +563,7 @@ int export_immediate_num(char* parameter){
     return atoi(ptr);
 }
 
+/*Get the selected addressing method based on a parameter */
 bool get_addressing_methods(char* parameter, char** error_note, InstructionParameter *addressing_parameters){
     int direct_register_result = is_direct_register(parameter, error_note);
     int indirect_register_result = is_indirect_register(parameter, error_note);
@@ -549,7 +572,7 @@ bool get_addressing_methods(char* parameter, char** error_note, InstructionParam
     }
     if(is_immediate(parameter)){
         addressing_parameters->addressing_method = IMMEDIATE;
-        addressing_parameters->Addressing.immediate = export_immediate_num(parameter);
+        addressing_parameters->Addressing.immediate = get_immediate_num(parameter);
         return true;
     }
     else if (direct_register_result != -2){
@@ -578,10 +601,12 @@ bool get_addressing_methods(char* parameter, char** error_note, InstructionParam
     return false;
 }
 
+/* return true if num of parameters is valid */
 bool valid_num_of_parameters(int parameters_in_line, int how_many_parameters_needed){
     return (parameters_in_line == how_many_parameters_needed);
 }
 
+/* validate addressing per command*/
 bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_dest, AddressingMethod addressing_method, char** error_note){
     const char* valid_addressing_ptr = instructions_commands_and_addressing[command][src_or_dest];
     int valid_addressing_method = (AddressingMethod)(*valid_addressing_ptr - '0');
@@ -601,6 +626,7 @@ bool valid_addressing_per_command(AssemblyCommands command, SourceOrDest src_or_
     return false;
 }
 
+/* if given pointer is direct, insert it*/
 void insert_ptr_if_its_a_direct(DynamicList *direct_labels_ptrs, InstructionParameter* src_or_dst_of_instruction_ptr,
                                 ParsedLine *parsed_line){
     if(src_or_dst_of_instruction_ptr->addressing_method == DIRECT){
@@ -610,6 +636,7 @@ void insert_ptr_if_its_a_direct(DynamicList *direct_labels_ptrs, InstructionPara
     }
 }
 
+/* check the validation and insertion addressing methods */
 bool validation_check_and_insertion_addressing_methods(char* parameters, AssemblyCommands command, char** error_note, InstructionParameter* src, InstructionParameter* dst, int* num_of_parameters, DynamicList *direct_labels_ptrs, ParsedLine *parsed_line){
 
     SeparateLineIntoWords parsed_instruction_parameters = instruction_parameters(parameters);
@@ -644,6 +671,8 @@ bool validation_check_and_insertion_addressing_methods(char* parameters, Assembl
     free_separate_line(&parsed_instruction_parameters);
     return false;
 }
+
+/* Insert instruction paramters to a given parsed line */
 void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, InstructionParameter src, InstructionParameter dst, int command_num, int num_of_parameters){
     int src_addressing_method;
     int dst_addressing_method;
@@ -666,7 +695,8 @@ void insert_instruction_parameters_to_the_parsed_line(ParsedLine* parsed_line, I
     }
 }
 
-/**/
+/* Check validation and insert instruction paramters
+ */
 bool check_validation_and_insert_instruction_parameters(ParsedLine* parsed_line, int parsed_words_ctr, SeparateLineIntoWords separated_words, DynamicList *errors_ptrs, DynamicList *direct_labels_ptrs){
     char* instruction_parameters_in_one_word;
     char *error_note = NULL;
