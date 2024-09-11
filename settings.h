@@ -104,14 +104,22 @@ typedef enum{
     INVALID_OR_NOT_IN_USE = -1
 } AddressingMethod;
 
+typedef enum {
+    INTERNAL_LABEL,
+    EXTERNAL_LABEL
+} DirectLabelType;
+
+typedef struct ParsedLine ParsedLine; /* for using it in InstructionParameter */
+
 typedef struct InstructionParameter{
     AddressingMethod addressing_method;
     union Addressing
     {
         int immediate;
         struct{
-            int label_counter;
-            char direct[MAX_LEN_OF_LABEL];
+            char direct_label[MAX_LEN_OF_LABEL];
+            DirectLabelType label_type;
+            ParsedLine* reference_line;
         } Direct;
         int register_num;
     } Addressing;

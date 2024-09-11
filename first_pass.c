@@ -570,7 +570,7 @@ bool get_addressing_methods(char* parameter, char** error_note, InstructionParam
     }
     else if (is_direct(parameter)){
         addressing_parameters->addressing_method = DIRECT;
-        strcpy(addressing_parameters->Addressing.Direct.direct, parameter);
+        strcpy(addressing_parameters->Addressing.Direct.direct_label, parameter);
         return true;
     }
     return false;

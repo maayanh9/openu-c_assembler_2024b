@@ -67,13 +67,14 @@ bool is_source_a_direct_addressing(ParsedLine direct_line) {
 }
 
 bool find_instruction_label_in_tables(DynamicList symbols_table, DynamicList external_ptrs,
-                   InstructionParameter direct_src_or_dest, int *symbol_address, int instruction_counter, int how_many_parameters_for_command, SourceOrDest src_or_dst, bool * found_at_extern_table) {
-    int ans = find_in_table(symbols_table, direct_src_or_dest.Addressing.Direct.direct, SYMBOLS_TABLE);
+                   InstructionParameter direct_src_or_dest, int *symbol_address, int instruction_counter,
+                   int how_many_parameters_for_command, SourceOrDest src_or_dst, bool * found_at_extern_table) {
+    int ans = find_in_table(symbols_table, direct_src_or_dest.Addressing.Direct.direct_label, SYMBOLS_TABLE);
     if(ans != -1) {
         *symbol_address = ((ParsedLine *)symbols_table.items[ans])->mete_data.instruction_counter;
         return true;
     }
-    ans = find_in_table(external_ptrs, direct_src_or_dest.Addressing.Direct.direct, EXTERN_TABLE);
+    ans = find_in_table(external_ptrs, direct_src_or_dest.Addressing.Direct.direct_label, EXTERN_TABLE);
     if(ans != -1) {
         *found_at_extern_table = true;
         *symbol_address = get_extern_instruction_counter(instruction_counter, how_many_parameters_for_command, src_or_dst);
@@ -113,11 +114,11 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
             bool found_at_extern_table = false;
 
             if(!find_direct_label_in_tables(symbols_table, external_ptrs, *direct_line, SOURCE, &symbol_address, &found_at_extern_table)){
-                printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct);
+                printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct_label);
                 printed = true;
             }
             else if(found_at_extern_table) {
-                update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.source.Addressing.Direct.direct);
+                update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.source.Addressing.Direct.direct_label);
             }
 
             direct_line->LineTypes.Instruction.source.Addressing.Direct.label_counter = symbol_address;
@@ -128,14 +129,13 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
             int symbol_address;
             bool found_at_extern_table = false;
             if(!find_direct_label_in_tables(symbols_table, external_ptrs, *direct_line, DESTINATION, &symbol_address, &found_at_extern_table)){
-                printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct);
+                printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct_label);
                 printed = true;
             }
             else if(found_at_extern_table){
-                update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct);
+                update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct_label);
             }
 
-            direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_counter = symbol_address;
 
         }
     }
@@ -285,28 +285,6 @@ bool insert_immediate(InstructionParameter src_or_dest, DynamicList* object_file
                                                                 and the immediate addressing number*/
     return insert_line_to_object_file(object_file, address, encoding);
 }
-
-bool insert_src_or_dest_addressing(InstructionParameter src_or_dest, DynamicList* object_file, int line_number,
-                                    int address, SourceOrDest source_or_dest) {
-    int addressing_method = src_or_dest.addressing_method;
-    switch (addressing_method) {
-        case IMMEDIATE:
-            return insert_immediate(src_or_dest, object_file, line_number, address);
-        case DIRECT:
-            break;
-        case DIRECT_REGISTER:
-            break;
-        case INDIRECT_REGISTER:
-            break;
-        case INVALID_OR_NOT_IN_USE:
-            /** TODO: delete this message*/
-            printf("invalid or not in use printed");
-            break;
-        default:
-            break;
-    }
-    return false;
-}
 bool are_both_register_addressing_modes(AddressingMethod src_addressing_method, AddressingMethod dest_addressing_method) {
     return (src_addressing_method == INDIRECT_REGISTER || src_addressing_method == DIRECT_REGISTER) &&
             (dest_addressing_method == INDIRECT_REGISTER || dest_addressing_method == DIRECT_REGISTER);
@@ -320,7 +298,7 @@ int get_register_encoding(int register_num, SourceOrDest source_or_dest, int cur
             return add_element_to_encoding(current_encoding, register_num, BIT_STORAGE_STARTS_FOR_DESTINATION_REGISTER);
         default:
             /*should not get there*/
-            return 0;
+                return 0;
     }
 }
 
@@ -338,6 +316,31 @@ bool insert_two_registers(InstructionParameter src, InstructionParameter dest, D
     encoding = get_register_encoding(dest_register_num, DESTINATION, encoding);
 
     return insert_number_to_object_file(encoding, line_num, object_file, address);
+}
+bool insert_direct() {
+
+}
+
+bool insert_src_or_dest_addressing(InstructionParameter src_or_dest_instruction, DynamicList* object_file, int line_number,
+                                    int address, SourceOrDest is_it_source_or_dest) {
+    int addressing_method = src_or_dest_instruction.addressing_method;
+    switch (addressing_method) {
+        case IMMEDIATE:
+            return insert_immediate(src_or_dest_instruction, object_file, line_number, address);
+        case DIRECT:
+            break;
+        case DIRECT_REGISTER:
+            return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, address, line_number);
+        case INDIRECT_REGISTER:
+            return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, address, line_number);
+        case INVALID_OR_NOT_IN_USE:
+            /** TODO: delete this message*/
+            printf("invalid or not in use printed");
+            break;
+        default:
+            break;
+    }
+    return false;
 }
 
 bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file) {
