@@ -196,7 +196,7 @@ void error_massage(char *entry_label, bool *printed_errors) {
 }
 
 /* parse the entry table the output file format */
-bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *entry_file_data, DynamicList symbols_table) {
+bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *entry_file_data, DynamicList symbols_table, int data_section_begin_address) {
     int i;
     int found_at_index;
     char* entry_label;
@@ -211,7 +211,12 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
             error_massage(entry_label, &printed_errors);
         }
         else {
-            update_entry_or_extern_table(entry_file_data, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.instruction_counter, entry_label);
+            if(((ParsedLine*)symbols_table.items[found_at_index])->mete_data.counter_type == DATA_COUNTER){
+                update_entry_or_extern_table(entry_file_data, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.data_counter + data_section_begin_address, entry_label);
+            }
+            else {
+                update_entry_or_extern_table(entry_file_data, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.instruction_counter, entry_label);
+            }
         }
     }
     if(printed_errors) {
@@ -540,7 +545,7 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     else if(!update_direct_addressing_from_symbols_table_or_print_errors(first_pass_output.symbols_table, first_pass_output.external_ptrs, first_pass_output.direct_labels_ptrs, &second_pass_output.extern_file_data)){
         result = false;
     }
-    else if(!parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table)){
+    else if(!parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table, first_pass_output.data_section_begin_address)){
         result = false;
     }
     else if(!convert_parsed_lines_to_binary(first_pass_output.parsed_lines_list, &second_pass_output.object_file, first_pass_output.data_section_begin_address)) {

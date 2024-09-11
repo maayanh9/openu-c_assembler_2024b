@@ -793,6 +793,8 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
             check_validation_and_insert_instruction_parameters(parsed_line, parsed_words_ctr, separated_words, errors_ptrs, direct_labels_ptrs);
         }
         else{
+            if(strlen(line) >= 2)
+                line[strlen(line)-2] = '\0';
             error_line(parsed_line, "line", line, errors_ptrs);
         }
     }
