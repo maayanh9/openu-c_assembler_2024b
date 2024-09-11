@@ -531,7 +531,10 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
     return second_pass_output;
 }
 
-/* this is the last rout of processing which is done on the first pass output*/
+/* this is the last rout of processing which is done on the first pass output
+ * the second pass includes updating the locations of the labels of direct addressing method
+ * and set the input of the ob, ext and ent files.
+ */
 SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     bool result = true;
     SecondPassOutput second_pass_output = initialize_second_pass_output(first_pass_output);

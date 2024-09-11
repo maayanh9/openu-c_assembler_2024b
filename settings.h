@@ -136,6 +136,7 @@ typedef struct InstructionParameter{
     
 } InstructionParameter;
 
+/* the main struct for parsing line*/
 struct ParsedLine{
     LineMetaData mete_data;
     LineType line_type;

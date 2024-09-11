@@ -828,7 +828,10 @@ void initialize_counters(LineMetaData *counters) {
     counters->counter_type = INSTRUCTION_COUNTER;
 }
 
-/* takes a given input file name and parses all the lines inside the file into a list of ParsedLine structs */
+/* takes a given input file name and parses all the lines inside the file into a list of ParsedLine structs
+ * also keep pointers to lines for symbols table, entry table, extern table and labels from direct addressing method
+ * move those data sturctures to the second pass
+ */
 FirstPassOutput first_pass(const char *input_file_name){
     bool result = false;
     FILE *input_file = fopen(input_file_name, "r");

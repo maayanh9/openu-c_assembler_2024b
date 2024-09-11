@@ -14,6 +14,10 @@ typedef struct SecondPassOutput{
     char first_line_object_file[LENGTH_OF_LINE_OBJECT_FILE];
 } SecondPassOutput;
 
+/* this is the last rout of processing which is done on the first pass output
+ * the second pass includes updating the locations of the labels of direct addressing method
+ * and set the input of the ob, ext and ent files.
+ */
 SecondPassOutput second_pass(FirstPassOutput first_pass_output);
 
 #endif
