@@ -6,14 +6,14 @@
 #include "text_and_digits_handler.h"
 
 
-void initialize_dynamic_list(DynamicList* list, int item_size){
+void initialize_dynamic_list(DynamicList* list, int item_size, int num_of_elements){
     list->item_size = item_size;
     list->list_length = 0;
     list->is_allocated = false;
     /*Allocate space for 2 cells*/
-    list->items = malloc(list->item_size * 2);
+    list->items = malloc(list->item_size * num_of_elements);
     CHECK_ALLOCATION(list->items);
-    list->max_capacity = 2;
+    list->max_capacity = num_of_elements;
 }
 
 void bigger_capacity(DynamicList* list){
@@ -24,6 +24,7 @@ void bigger_capacity(DynamicList* list){
 }
 
 void insert_new_cell_into_dynamic_list(DynamicList* list, void* new_cell){
+    /* insert value at the end of the list*/
     if( list->list_length == list->max_capacity)
         bigger_capacity(list);
     ((void**)list->items)[list->list_length] = new_cell;

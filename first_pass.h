@@ -15,6 +15,8 @@ typedef struct FirstPassOutput{
     DynamicList entry_ptrs;
     DynamicList external_ptrs;
     DynamicList direct_labels_ptrs;
+    int data_section_begin_address;
+    int capacity_needed_for_object_file;
 } FirstPassOutput;
 
 void free_parsed_data_output_dynamic_lists(DynamicList parsed_lines_list, DynamicList symbols_table, DynamicList errors_ptrs, DynamicList entry_ptrs, DynamicList external_ptrs, DynamicList direct_labels_ptrs);

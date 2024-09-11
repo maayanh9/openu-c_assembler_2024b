@@ -10,7 +10,7 @@ typedef struct DynamicList{
     bool is_allocated;
 } DynamicList;
 
-void initialize_dynamic_list(DynamicList* list, int item_size);
+void initialize_dynamic_list(DynamicList* list, int item_size, int num_of_elements);
 
 void bigger_capacity(DynamicList* list);
 

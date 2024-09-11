@@ -6,12 +6,12 @@
 
 typedef struct SecondPassOutput{
     bool success;
-    DynamicList parsed_lines_list;
     DynamicList errors_ptrs;
+    DynamicList parsed_lines_list;
     DynamicList entry_file_data;
     DynamicList extern_file_data;
-    DynamicList direct_labels_ptrs;
     DynamicList object_file;
+    char first_line_object_file[LENGTH_OF_LINE_OBJECT_FILE];
 } SecondPassOutput;
 
 SecondPassOutput second_pass(FirstPassOutput first_pass_output);

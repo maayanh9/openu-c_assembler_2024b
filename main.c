@@ -31,10 +31,10 @@ void assembler_process(const char *input_file_name){
     char* am_extention;
     bool preprocess_macro_done_successfully = preprocess_macro(input_file_name);
 
-    printf("processing file: %s\n", input_file_name);
+    printf("\n\t\t*******\nprocessing file: %s\n", input_file_name);
 
     if (!preprocess_macro_done_successfully){
-        printf("file: %s error occurred in processing the file with the macros.\n", input_file_name);
+        printf("file: %s error occurred in processing the file with the macros.\n\n", input_file_name);
         exit(1);
     }
     am_extention = change_file_extention(input_file_name, FILE_EXTENSION_PREPROCESSOR);
@@ -42,7 +42,7 @@ void assembler_process(const char *input_file_name){
         printf("file: %s, processed successfully\n\n", input_file_name);
     }
     else {
-        printf("error occurred while processing file: %s. fix the errors above and run the assembles again.\n", input_file_name);
+        printf("error occurred while processing file: %s. \nfix the errors above and run the assembles again.\n\n", input_file_name);
     }
 
 

@@ -128,11 +128,12 @@ void error_line(ParsedLine* parsed_line, char* type, char* invalid_data, Dynamic
     sprintf(parsed_line->LineTypes.error_str, "Invalid %s: %s, at line %d.\n", type, invalid_data, line_counter);
 
     insert_new_cell_into_dynamic_list(errors_ptrs, parsed_line);
-    
 }
+
 bool is_valid_directive_call(int directive_num, int parsed_words_ctr, int how_many_words_in_line){
     return (directive_num != -1 && !is_the_last_word_in_this_line(parsed_words_ctr, how_many_words_in_line));
 }
+
 bool starts_with_comma(char* data_parameters){
     if(strlen(data_parameters) == 0)
         return false;
@@ -233,8 +234,8 @@ bool insert_data_directive_into_parsed_line_or_error(ParsedLine* parsed_line, in
     bool answer = true;
     if(valid_data_num_parameters(data_parameters)){
         if(insert_data_numbers_into_list(parsed_line, data_parameters)){
-            parsed_line->mete_data.data_counter += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
             parsed_line->mete_data.space_to_keep_for_current_line += parsed_line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
+            parsed_line->mete_data.counter_type = DATA_COUNTER;
         }
         else{
             error_line(parsed_line, ".data directive (too many integers)", data_parameters, errors_ptrs);
@@ -260,6 +261,7 @@ bool insert_string_directive_into_parsed_line_or_error(ParsedLine* parsed_line, 
         ascii_string[strlen(ascii_string) - 1] = '\0'; /* cut the " at the end of the string*/
         strcpy(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string, ascii_string);
         parsed_line->mete_data.space_to_keep_for_current_line += strlen(parsed_line->LineTypes.Directive.DirectiveTypes.ascii_string) + 1; /* +1 for the \0 */
+        parsed_line->mete_data.counter_type = DATA_COUNTER;
     }
     else{
         error_line(parsed_line, ".string directive", separated_words.words[*parsed_words_ctr], errors_ptrs);
@@ -703,7 +705,10 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
     int parsed_words_ctr = 0;
     parsed_line->mete_data.instruction_counter = counters->instruction_counter;
     parsed_line->mete_data.line_counter = counters->line_counter;
+    parsed_line->mete_data.data_counter = counters->data_counter;
     parsed_line->mete_data.space_to_keep_for_current_line = 0;
+    parsed_line->mete_data.counter_type = INSTRUCTION_COUNTER; /* the default is instruction counter,
+                                                                and it will change if it is a data line */
     if (is_comment_or_empty_line(separated_words)){
         parsed_line->line_type = EMPTY_OR_COMMENT_LINE;
         goto finished_parsing_line;
@@ -734,6 +739,8 @@ ParsedLine* parse_line(char* line, LineMetaData *counters, DynamicList *symbols_
 finished_parsing_line:
     counters->instruction_counter = parsed_line->mete_data.instruction_counter;
     counters->space_to_keep_for_current_line = parsed_line->mete_data.space_to_keep_for_current_line;
+    counters->data_counter = parsed_line->mete_data.data_counter;
+    counters->counter_type = parsed_line->mete_data.counter_type;
     free_separate_line(&separated_words);
     return parsed_line;
 }
@@ -753,6 +760,24 @@ void free_parsed_data_output_dynamic_lists(DynamicList parsed_lines_list, Dynami
  */
 
 
+void initialize_first_pass_output_lists(FirstPassOutput *first_pass_output) {
+    initialize_dynamic_list(&first_pass_output->parsed_lines_list, sizeof(ParsedLine), 10);
+    initialize_dynamic_list(&first_pass_output->symbols_table, sizeof(ParsedLine *), 10);
+    initialize_dynamic_list(&first_pass_output->errors_ptrs, sizeof(ParsedLine *), 10);
+    initialize_dynamic_list(&first_pass_output->entry_ptrs, sizeof(ParsedLine *), 10);
+    initialize_dynamic_list(&first_pass_output->external_ptrs, sizeof(ParsedLine *), 10);
+    initialize_dynamic_list(&first_pass_output->direct_labels_ptrs, sizeof(ParsedLine *), 10);
+    first_pass_output->capacity_needed_for_object_file = 0;
+    first_pass_output->data_section_begin_address = 0;
+}
+
+void initialize_counters(LineMetaData *counters) {
+    counters->instruction_counter = INITIAL_INSTRUCTION_ADDRESS;
+    counters->data_counter = 0;
+    counters->space_to_keep_for_current_line = 0;
+    counters->line_counter = 1;
+    counters->counter_type = INSTRUCTION_COUNTER;
+}
 
 FirstPassOutput first_pass(const char *input_file_name){
     bool result = false;
@@ -761,19 +786,9 @@ FirstPassOutput first_pass(const char *input_file_name){
     LineMetaData counters;
 
     FirstPassOutput first_pass_output;
+    initialize_first_pass_output_lists(&first_pass_output);
 
-
-    /** TODO: check if its better to init it and return DynamicList as a result for less lines*/
-    initialize_dynamic_list(&first_pass_output.parsed_lines_list, sizeof(ParsedLine));
-    initialize_dynamic_list(&first_pass_output.symbols_table, sizeof(ParsedLine *));
-    initialize_dynamic_list(&first_pass_output.errors_ptrs, sizeof(ParsedLine *));
-    initialize_dynamic_list(&first_pass_output.entry_ptrs, sizeof(ParsedLine *));
-    initialize_dynamic_list(&first_pass_output.external_ptrs, sizeof(ParsedLine *));
-    initialize_dynamic_list(&first_pass_output.direct_labels_ptrs, sizeof(ParsedLine *));
-
-    counters.instruction_counter = 100;
-    counters.space_to_keep_for_current_line = 0;
-    counters.line_counter = 1;
+    initialize_counters(&counters);
 
     if(!check_if_file_opened_successfully(input_file)){
         result = false;
@@ -781,18 +796,36 @@ FirstPassOutput first_pass(const char *input_file_name){
     
 
     while (fgets(line, MAX_LEN_LINE_ASSEMBLY_FILE, input_file) != NULL){
+        /** TODO: check for data exeeded 4096 or the number they asked */
+        /** TODO: check for \n for lines larger than 81 */
         ParsedLine *parsed_line = malloc(sizeof(ParsedLine));
         CHECK_ALLOCATION(parsed_line);
+        first_pass_output.capacity_needed_for_object_file += counters.space_to_keep_for_current_line;
 
-        counters.instruction_counter += counters.space_to_keep_for_current_line;
+        if(counters.counter_type == INSTRUCTION_COUNTER) {
+            counters.instruction_counter += counters.space_to_keep_for_current_line;
+        }
+        else {
+            counters.data_counter += counters.space_to_keep_for_current_line;
+        }
 
         parse_line(line, &counters, &first_pass_output.symbols_table, &first_pass_output.errors_ptrs, &first_pass_output.entry_ptrs, &first_pass_output.external_ptrs, &first_pass_output.direct_labels_ptrs, parsed_line);
         counters.line_counter ++;
 
         insert_new_cell_into_dynamic_list(&first_pass_output.parsed_lines_list, parsed_line);
         first_pass_output.parsed_lines_list.is_allocated = true;
-        /*insert_line_into_lines_list(parsed_line, &result, &lines_list);*/
 
+    }
+    first_pass_output.data_section_begin_address = counters.instruction_counter;
+    if(counters.counter_type == INSTRUCTION_COUNTER) {
+        first_pass_output.data_section_begin_address += counters.space_to_keep_for_current_line;
+    }
+
+    first_pass_output.capacity_needed_for_object_file += counters.space_to_keep_for_current_line;
+    if(first_pass_output.capacity_needed_for_object_file + INITIAL_INSTRUCTION_ADDRESS > MEMORY_ASSEMBLER_CAPACITY_LIMIT){
+        result = false;
+        printf("exceeded storage to max capacity. write smaller program and run again.\n");
+        goto cleanup;
     }
     result = true;
 

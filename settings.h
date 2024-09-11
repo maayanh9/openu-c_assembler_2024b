@@ -6,6 +6,9 @@
 #define MAX_LEN_OF_A_SINGLE_WORD 80
 #define MAX_LEN_ERROR_STR 300
 
+#define MEMORY_ASSEMBLER_CAPACITY_LIMIT 4095
+#define INITIAL_INSTRUCTION_ADDRESS 100
+
 #define MAX_NUMBERS_IN_DATA_LABEL 38
 #define MAX_ASCII_STRING_LEN 74
 #define MAX_LEN_OF_LABEL 31
@@ -50,8 +53,13 @@ typedef struct Node{
 } Node;
 
 
+typedef enum {
+    DATA_COUNTER,
+    INSTRUCTION_COUNTER
+} AddressCounterType;
 
 typedef struct LineMetaData{
+    AddressCounterType counter_type;
     int data_counter;
     int instruction_counter;
     int space_to_keep_for_current_line;
@@ -106,7 +114,8 @@ typedef enum{
 } AddressingMethod;
 
 typedef enum {
-    INTERNAL_LABEL,
+    INTERNAL_INSTRUCTION_LABEL,
+    INTERNAL_DATA_LABEL,
     EXTERNAL_LABEL
 } DirectLabelType;
 
