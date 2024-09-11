@@ -40,16 +40,20 @@ bool export_output_assembler_files(SecondPassOutput second_pass_output, const ch
     char* entry_file_path = change_file_extention(string_copy(file_name), FILE_EXTENSION_ENTRY_FILE);
     char* external_file_path = change_file_extention(string_copy(file_name), FILE_EXTENSION_EXTERNAL_FILE);
     char* object_file_path = change_file_extention(string_copy(file_name), FILE_EXTENSION_OBJECT_FILE);
-
+    bool result = true;
 
     /*exporting the entry and extern files*/
     if(!export_file_from_list_of_strings(second_pass_output.entry_file_data, entry_file_path, NULL) ||
         !export_file_from_list_of_strings(second_pass_output.extern_file_data, external_file_path, NULL) ||
         !export_file_from_list_of_strings(second_pass_output.object_file, object_file_path, second_pass_output.first_line_object_file)) {
-        return false;
+        result = false;
     }
 
     free_file_names(entry_file_path, external_file_path, object_file_path);
-    return true;
+    free_dynamic_list(&second_pass_output.entry_file_data);
+    free_dynamic_list(&second_pass_output.extern_file_data);
+    free_dynamic_list(&second_pass_output.object_file);
+
+    return result;
 }
 

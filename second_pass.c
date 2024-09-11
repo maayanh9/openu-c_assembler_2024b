@@ -511,6 +511,8 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     free_dynamic_list(&first_pass_output.symbols_table);
     free_dynamic_list(&first_pass_output.direct_labels_ptrs);
     free_dynamic_list(&first_pass_output.external_ptrs);
+    free_dynamic_list(&first_pass_output.entry_ptrs);
+    free_dynamic_list(&first_pass_output.errors_ptrs);
 
     second_pass_output.success = result;
     return second_pass_output;
