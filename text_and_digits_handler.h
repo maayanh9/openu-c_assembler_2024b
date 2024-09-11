@@ -13,7 +13,7 @@
 
 char* string_copy(const char* str_input);
 
-char* change_file_extention(const char* file_name, const char* file_extention);
+char* change_file_extention(const char* file_path, const char* filename_extension);
 
 bool check_if_file_opened_successfully(FILE *file);
 
