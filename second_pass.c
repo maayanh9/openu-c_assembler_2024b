@@ -204,6 +204,8 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
     }
     return true;
 }
+
+/* return true if given value is a valid number */
 bool a_valid_num(int num, int bits) {
     /* check if it is a signed int in the range can be storage on 15bits (2^15 /2 = 2^14 for positive and negative)*/
     if(bits == 15) {
@@ -216,6 +218,7 @@ bool a_valid_num(int num, int bits) {
     return false;
 }
 
+/* insert given line into object file */
 bool insert_line_to_object_file(DynamicList *object_file, int address, int decimal_instruction){
     char *file_line;
 
@@ -229,6 +232,8 @@ bool insert_line_to_object_file(DynamicList *object_file, int address, int decim
 
     return true;
 }
+
+/* insert a given number to the object file */
 bool insert_number_to_object_file(int number, int line_num, DynamicList* object_file, int address) {
     if(!a_valid_num(number, 15)) {
         printf("line %d:\tnum: %d is larger than signed integer of 15bits.\n", line_num, number);
@@ -237,6 +242,7 @@ bool insert_number_to_object_file(int number, int line_num, DynamicList* object_
     return insert_line_to_object_file(object_file, address, number);
 }
 
+/* insert directive data into object file */
 bool insert_directive_data(int* data_numbers, int num_of_elements, int address, int line_num, DynamicList* object_file) {
     int i;
     for (i = 0; i<num_of_elements; i++) {
@@ -247,12 +253,16 @@ bool insert_directive_data(int* data_numbers, int num_of_elements, int address, 
     }
     return true;
 }
+
+/* handle the data case, and insetrt into object file */
 bool handle_data_case(ParsedLine *line, DynamicList* object_file, int address) {
     int* data_numbers = line->LineTypes.Directive.DirectiveTypes.DirectiveData.data_numbers;
     int num_of_elements = line->LineTypes.Directive.DirectiveTypes.DirectiveData.num_of_elements;
     int line_num = line->mete_data.line_counter;
     return insert_directive_data(data_numbers, num_of_elements, address, line_num, object_file);
 }
+
+/* insert the directive sstring into a given object file */
 void insert_directive_string(char* string, int address, DynamicList* object_file) {
     int i;
     for(i = 0; i< strlen(string); i++) {
@@ -262,18 +272,20 @@ void insert_directive_string(char* string, int address, DynamicList* object_file
     insert_line_to_object_file(object_file, address, (int)'\0'); /*the end of the ascii string*/
 }
 
+/* handle string case */
 void handle_string_case(ParsedLine *line, DynamicList* object_file, int address) {
     char* string = line->LineTypes.Directive.DirectiveTypes.ascii_string;
     insert_directive_string(string, address, object_file);
 }
 
+/* parse the directive line and put into object file */
 bool parse_directive_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file, int data_section_begin_address) {
     AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
     int address = data_section_begin_address + line->mete_data.data_counter;
     switch (directive_type) {
         case DATA:
             return handle_data_case(line, object_file, address);
-        case STRING: /**TODO: STRING*/
+        case STRING:
             handle_string_case(line, object_file, address);
         default:
             break;
@@ -281,12 +293,13 @@ bool parse_directive_line_to_object_file_pattern(ParsedLine *line, DynamicList* 
     return true;
 }
 
+/*insert command and addressing methods to object file.
+ *insert also the registers if it is a register addressing method.
+ * when using this method, values that are not in use (src/dest addressing) need be -1 to ignore them
+ */
 bool insert_command(ParsedLine *line, DynamicList* object_file, AssemblyCommands command, int address,
     int src_addressing, int dest_addressing) {
-    /*insert command and addressing methods to object file.
-     *insert also the registers if it is a register addressing method.
-     * when using this method, values that are not in use (src/dest addressing) need be -1 to ignore them
-     */
+
     int encoding = add_element_to_encoding(0, (int)command, BIT_STORAGE_STARTS_FOR_OPCODE);
     if(src_addressing != -1) {
         encoding = add_element_to_encoding(encoding, addressing_to_fit_object_file[src_addressing], BIT_STORAGE_STARTS_FOR_SOURCE_ADDRESSING_METHOD);
@@ -298,6 +311,7 @@ bool insert_command(ParsedLine *line, DynamicList* object_file, AssemblyCommands
     return insert_line_to_object_file(object_file, address, encoding);
 }
 
+/* insert immediate into object file */
 bool insert_immediate(InstructionParameter src_or_dest, DynamicList* object_file, int line_number, int address) {
     int immediate_number = src_or_dest.Addressing.immediate;
     int encoding;
@@ -310,11 +324,13 @@ bool insert_immediate(InstructionParameter src_or_dest, DynamicList* object_file
                                                                 and the immediate addressing number*/
     return insert_line_to_object_file(object_file, address, encoding);
 }
+/* return true if both register addressing modes are correct */
 bool are_both_register_addressing_modes(AddressingMethod src_addressing_method, AddressingMethod dest_addressing_method) {
     return (src_addressing_method == INDIRECT_REGISTER || src_addressing_method == DIRECT_REGISTER) &&
             (dest_addressing_method == INDIRECT_REGISTER || dest_addressing_method == DIRECT_REGISTER);
 }
 
+/* get the register encoing */
 int get_register_encoding(int register_num, SourceOrDest source_or_dest, int current_encoding) {
     switch (source_or_dest) {
         case SOURCE:
@@ -327,12 +343,14 @@ int get_register_encoding(int register_num, SourceOrDest source_or_dest, int cur
     }
 }
 
+/* insert register to object file */
 bool insert_register(int register_num, SourceOrDest source_or_dest, DynamicList* object_file, int address, int line_num) {
     int encoding = a_r_e_fields[A];
     encoding = get_register_encoding(register_num, source_or_dest, encoding);
     return insert_number_to_object_file(encoding, line_num, object_file, address);
 }
 
+/* insert two registers to object file */
 bool insert_two_registers(InstructionParameter src, InstructionParameter dest, DynamicList* object_file, int address, int line_num) {
     const int source_register_num = src.Addressing.register_num;
     const int dest_register_num = dest.Addressing.register_num;
@@ -342,11 +360,15 @@ bool insert_two_registers(InstructionParameter src, InstructionParameter dest, D
 
     return insert_number_to_object_file(encoding, line_num, object_file, address);
 }
+
+/* inser internal label into object file */
 bool insert_internal_label(DynamicList* object_file, int address, int pointed_address) {
     int encoding = a_r_e_fields[R];
     encoding = add_element_to_encoding(encoding, pointed_address, BIT_STORAGE_STARTS_FOR_DIRECT_ADDRESSING);
     return insert_line_to_object_file(object_file, address, encoding);
 }
+
+/* insert direct into object file */
 bool insert_direct(DynamicList* object_file, int line_number, InstructionParameter src_or_dest_instruction, int instruction_address, int
                    data_section_begin_address) {
     DirectLabelType label_type = src_or_dest_instruction.Addressing.Direct.label_type;
@@ -364,6 +386,7 @@ bool insert_direct(DynamicList* object_file, int line_number, InstructionParamet
     return true;
 }
 
+/* insert src or dst addressing into object file = */
 bool insert_src_or_dest_addressing(InstructionParameter src_or_dest_instruction, DynamicList* object_file, int line_number,
                                    int instruction_address, SourceOrDest is_it_source_or_dest, int data_section_begin_address) {
     AddressingMethod addressing_method = src_or_dest_instruction.addressing_method;
@@ -387,6 +410,7 @@ bool insert_src_or_dest_addressing(InstructionParameter src_or_dest_instruction,
     return true;
 }
 
+/* parse the instruction line into an object file patter */
 bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file, int data_section_begin_address) {
     bool success = true;
     AssemblyCommands command = line->LineTypes.Instruction.command;
@@ -427,7 +451,7 @@ bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList
     return success;
 }
 
-
+/* convert given parsed line object into an object line */
 bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line, int data_section_begin_address) {
 
     switch (line->line_type) {
@@ -444,6 +468,7 @@ bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line, int
     return true;
 }
 
+/* take the parsed lines and convert them to binary */
 bool convert_parsed_lines_to_binary(DynamicList parsed_lines_list, DynamicList* object_file, int data_section_begin_address) {
     int i;
     bool success = true;
@@ -454,6 +479,7 @@ bool convert_parsed_lines_to_binary(DynamicList parsed_lines_list, DynamicList* 
     return success;
 }
 
+/* are there any errors found in the assembly inpout file */
 bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
     /*checks for error lines. if there are error lines,
      * the lines will be printed.
@@ -473,6 +499,7 @@ bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
     return true;
 }
 
+/* initialize all needed resources*/
 SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output) {
     SecondPassOutput second_pass_output;
 
@@ -489,6 +516,7 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
     return second_pass_output;
 }
 
+/* this is the last rout of processing which is done on the first pass output*/
 SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     bool result = true;
     SecondPassOutput second_pass_output = initialize_second_pass_output(first_pass_output);
