@@ -9,6 +9,10 @@
 #include "first_pass.h"
 #include "text_and_digits_handler.h"
 
+/* for adding it to the data counter */
+int data_section_begin_address;
+
+
 /* Table for symbols*/
 typedef enum Table {
     SYMBOLS_TABLE,
@@ -16,8 +20,53 @@ typedef enum Table {
     EXTERN_TABLE
 } Table;
 
+
+/* ensure that counter updated before update it another time*/
+bool counter_already_updated(ParsedLine *line) {
+    return (line->mete_data.data_counter == -1) || (line->mete_data.instruction_counter ==-1);
+}
+
+/*decide if the line use the IC or DC.
+ * if it was the DC, add the to it.
+ * setting the other counter to -1 to make sure it is not in use.
+ */
+void update_line_counter(ParsedLine *line) {
+    if(!counter_already_updated(line)) {
+        switch (line->mete_data.counter_type) {
+            case INSTRUCTION_COUNTER:
+                line->mete_data.data_counter = -1;
+            break;
+            case DATA_COUNTER:
+                line->mete_data.data_counter += data_section_begin_address;
+            line->mete_data.instruction_counter = -1;
+            break;
+        }
+    }
+}
+
+
+/* return the right counter (instruction or data)
+ * the value of the other counter (that is not in use) should be -1 if the counters updated.
+ * for efficient code, instead of passing one more time and updating the counters, in case of using
+ * label (direct addressing) at instructions, the function will update the counter
+ */
+int get_counter(ParsedLine *line) {
+    if(line->mete_data.counter_type == DATA_COUNTER && line->mete_data.instruction_counter == -1)
+        return line->mete_data.data_counter;
+    if(line->mete_data.counter_type == INSTRUCTION_COUNTER && line->mete_data.data_counter == -1) {
+        return line->mete_data.instruction_counter;
+    }
+    else {
+        update_line_counter(line);
+        if(line->mete_data.counter_type == DATA_COUNTER)
+            return line->mete_data.data_counter;
+        return line->mete_data.instruction_counter;
+    }
+
+}
+
 /* forward decleration. see real docs later */
-bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line, int data_section_begin_address);
+bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line);
 
 /* get entry or extern label */
 char* get_entry_or_extern_label(ParsedLine *parsed_entry_line) {
@@ -79,19 +128,17 @@ bool is_source_a_direct_addressing(ParsedLine direct_line) {
 
 /* find the instruction label in tables */
 bool find_instruction_label_in_tables(DynamicList symbols_table, DynamicList external_ptrs,
-                   InstructionParameter direct_src_or_dest, int *symbol_address, int instruction_counter,
-                   int how_many_parameters_for_command, SourceOrDest src_or_dst, bool * found_at_extern_table,
-                   ParsedLine** found_at_line) {
+                                      InstructionParameter direct_src_or_dest, int instruction_counter,
+                                      int how_many_parameters_for_command, SourceOrDest src_or_dst, bool * found_at_extern_table,
+                                      ParsedLine** found_at_line) {
     int ans = find_in_table(symbols_table, direct_src_or_dest.Addressing.Direct.direct_label, SYMBOLS_TABLE);
     if(ans != -1) {
-        *symbol_address = ((ParsedLine *)symbols_table.items[ans])->mete_data.instruction_counter;
         *found_at_line = (ParsedLine *)symbols_table.items[ans];
         return true;
     }
     ans = find_in_table(external_ptrs, direct_src_or_dest.Addressing.Direct.direct_label, EXTERN_TABLE);
     if(ans != -1) {
         *found_at_extern_table = true;
-        *symbol_address = get_extern_instruction_counter(instruction_counter, how_many_parameters_for_command, src_or_dst);
         *found_at_line = (ParsedLine *)symbols_table.items[ans];
         return true;
     }
@@ -100,17 +147,17 @@ bool find_instruction_label_in_tables(DynamicList symbols_table, DynamicList ext
 
 /* find direct label in tables */
 bool find_direct_label_in_tables(DynamicList symbols_table, DynamicList external_ptrs, ParsedLine direct_line,
-    SourceOrDest src_or_dest, int *symbol_address, bool * found_at_extern_table, ParsedLine** found_at_line) {
+                                 SourceOrDest src_or_dest, bool * found_at_extern_table, ParsedLine** found_at_line) {
     switch (src_or_dest) {
         case SOURCE:
-            return find_instruction_label_in_tables(symbols_table, external_ptrs, direct_line.LineTypes.Instruction.source, symbol_address, direct_line.mete_data.instruction_counter,
-                atoi(instructions_commands_and_addressing[direct_line.LineTypes.Instruction.command][3]),
-                SOURCE, found_at_extern_table, found_at_line);
+            return find_instruction_label_in_tables(symbols_table, external_ptrs, direct_line.LineTypes.Instruction.source, get_counter(&direct_line), atoi(instructions_commands_and_addressing[direct_line.LineTypes.Instruction.command][3]),
+                                                    SOURCE,
+                                                    found_at_extern_table, found_at_line);
         case DESTINATION:
             return find_instruction_label_in_tables(symbols_table, external_ptrs, direct_line.LineTypes.Instruction.dest,
-                symbol_address, direct_line.mete_data.instruction_counter,
-                atoi(instructions_commands_and_addressing[direct_line.LineTypes.Instruction.command][3]),
-                DESTINATION, found_at_extern_table, found_at_line);
+                                                    get_counter(&direct_line), atoi(instructions_commands_and_addressing[direct_line.LineTypes.Instruction.command][3]),
+                                                    DESTINATION,
+                                                    found_at_extern_table, found_at_line);
         default:
             return false;
     }
@@ -134,15 +181,14 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
     for(i = 0; i < direct_labels_ptrs.list_length; i++) {
         ParsedLine *direct_line = (ParsedLine*)direct_labels_ptrs.items[i];
         if(is_source_a_direct_addressing(*direct_line)) {
-            int symbol_address;
             ParsedLine* found_at_line;
             bool found_at_extern_table = false;
-            if(!find_direct_label_in_tables(symbols_table, external_ptrs, *direct_line, SOURCE, &symbol_address, &found_at_extern_table, &found_at_line)){
+            if(!find_direct_label_in_tables(symbols_table, external_ptrs, *direct_line, SOURCE, &found_at_extern_table, &found_at_line)){
                 printf("error: no reference to label: %s\n", direct_line->LineTypes.Instruction.source.Addressing.Direct.direct_label);
                 printed = true;
             }
             else if(found_at_extern_table) {
-                update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.source.Addressing.Direct.direct_label);
+                update_entry_or_extern_table(extern_file_data, get_counter(found_at_line), direct_line->LineTypes.Instruction.source.Addressing.Direct.direct_label);
                 direct_line->LineTypes.Instruction.source.Addressing.Direct.label_type = EXTERNAL_LABEL;
             }
             else {
@@ -151,32 +197,31 @@ bool update_direct_addressing_from_symbols_table_or_print_errors(DynamicList sym
                 }
                 else {
                     direct_line->LineTypes.Instruction.source.Addressing.Direct.label_type = INTERNAL_DATA_LABEL;
-                    direct_line->LineTypes.Instruction.source.Addressing.Direct.label_counter = found_at_line->mete_data.data_counter;
+                    direct_line->LineTypes.Instruction.source.Addressing.Direct.label_counter = get_counter(found_at_line);
                 }
             }
         }
 
         if(is_dest_a_direct_addressing(*direct_line)){
-            int symbol_address;
             bool found_at_extern_table = false;
             ParsedLine* found_at_line;
-            if(!find_direct_label_in_tables(symbols_table, external_ptrs, *direct_line, DESTINATION, &symbol_address, &found_at_extern_table, &found_at_line)){
+            if(!find_direct_label_in_tables(symbols_table, external_ptrs, *direct_line, DESTINATION, &found_at_extern_table, &found_at_line)){
                 printf("no reference to label: %s\n", direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct_label);
                 printed = true;
             }
             else if(found_at_extern_table){
-                update_entry_or_extern_table(extern_file_data, symbol_address, direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct_label);
+                update_entry_or_extern_table(extern_file_data, get_counter(found_at_line), direct_line->LineTypes.Instruction.dest.Addressing.Direct.direct_label);
                 direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_type = EXTERNAL_LABEL;
             }
             else{
                 if(found_at_line->mete_data.counter_type == INSTRUCTION_COUNTER) {
                     direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_type = INTERNAL_INSTRUCTION_LABEL;
-                    direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_counter = symbol_address;
+                    direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_counter = get_counter(found_at_line);
                 }
 
                 else {
                     direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_type = INTERNAL_DATA_LABEL;
-                    direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_counter = found_at_line->mete_data.data_counter;
+                    direct_line->LineTypes.Instruction.dest.Addressing.Direct.label_counter = get_counter(found_at_line);
 
                 }
             }
@@ -196,7 +241,7 @@ void error_massage(char *entry_label, bool *printed_errors) {
 }
 
 /* parse the entry table the output file format */
-bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *entry_file_data, DynamicList symbols_table, int data_section_begin_address) {
+bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *entry_file_data, DynamicList symbols_table) {
     int i;
     int found_at_index;
     char* entry_label;
@@ -211,12 +256,7 @@ bool parse_the_entry_table_to_output_file(DynamicList entry_ptrs, DynamicList *e
             error_massage(entry_label, &printed_errors);
         }
         else {
-            if(((ParsedLine*)symbols_table.items[found_at_index])->mete_data.counter_type == DATA_COUNTER){
-                update_entry_or_extern_table(entry_file_data, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.data_counter + data_section_begin_address, entry_label);
-            }
-            else {
-                update_entry_or_extern_table(entry_file_data, ((ParsedLine*)symbols_table.items[found_at_index])->mete_data.instruction_counter, entry_label);
-            }
+            update_entry_or_extern_table(entry_file_data, get_counter((ParsedLine*)symbols_table.items[found_at_index]), entry_label);
         }
     }
     if(printed_errors) {
@@ -299,9 +339,9 @@ void handle_string_case(ParsedLine *line, DynamicList* object_file, int address)
 }
 
 /* parse the directive line and put into object file */
-bool parse_directive_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file, int data_section_begin_address) {
+bool parse_directive_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file) {
     AssemblyDirective directive_type = line->LineTypes.Directive.directive_type;
-    int address = data_section_begin_address + line->mete_data.data_counter;
+    int address = get_counter(line);
     switch (directive_type) {
         case DATA:
             return handle_data_case(line, object_file, address);
@@ -389,15 +429,14 @@ bool insert_internal_label(DynamicList* object_file, int address, int pointed_ad
 }
 
 /* insert direct into object file */
-bool insert_direct(DynamicList* object_file, int line_number, InstructionParameter src_or_dest_instruction, int instruction_address, int
-                   data_section_begin_address) {
+bool insert_direct(DynamicList* object_file, int line_number, InstructionParameter src_or_dest_instruction, int instruction_address) {
     DirectLabelType label_type = src_or_dest_instruction.Addressing.Direct.label_type;
     int reference_address = src_or_dest_instruction.Addressing.Direct.label_counter;
     switch (label_type) {
         case INTERNAL_INSTRUCTION_LABEL:
             return insert_internal_label(object_file, instruction_address, reference_address);
         case INTERNAL_DATA_LABEL:
-            return insert_internal_label(object_file, instruction_address, reference_address + data_section_begin_address);
+            return insert_internal_label(object_file, instruction_address, reference_address);
             break;
         case EXTERNAL_LABEL:
             return insert_line_to_object_file(object_file, instruction_address, a_r_e_fields[E]); /*external instruction_address*/
@@ -408,18 +447,18 @@ bool insert_direct(DynamicList* object_file, int line_number, InstructionParamet
 
 /* insert src or dst addressing into object file = */
 bool insert_src_or_dest_addressing(InstructionParameter src_or_dest_instruction, DynamicList* object_file, int line_number,
-                                   int instruction_address, SourceOrDest is_it_source_or_dest, int data_section_begin_address) {
+                                   int address, SourceOrDest is_it_source_or_dest) {
     AddressingMethod addressing_method = src_or_dest_instruction.addressing_method;
     switch (addressing_method) {
         case IMMEDIATE:
-            return insert_immediate(src_or_dest_instruction, object_file, line_number, instruction_address);
+            return insert_immediate(src_or_dest_instruction, object_file, line_number, address);
         case DIRECT:
-            return insert_direct(object_file, line_number, src_or_dest_instruction, instruction_address, data_section_begin_address);
+            return insert_direct(object_file, line_number, src_or_dest_instruction, address);
             break;
         case DIRECT_REGISTER:
-            return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, instruction_address, line_number);
+            return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, address, line_number);
         case INDIRECT_REGISTER:
-            return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, instruction_address, line_number);
+            return insert_register(src_or_dest_instruction.Addressing.register_num, is_it_source_or_dest, object_file, address, line_number);
 
         default:
             break;
@@ -428,11 +467,10 @@ bool insert_src_or_dest_addressing(InstructionParameter src_or_dest_instruction,
 }
 
 /* parse the instruction line into an object file patter */
-bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file, int data_section_begin_address) {
+bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList* object_file) {
     bool success = true;
     AssemblyCommands command = line->LineTypes.Instruction.command;
-    int instuction_address = line->mete_data.instruction_counter;
-    int data_address = line->mete_data.data_counter + data_section_begin_address;
+    int address = get_counter(line);
 
     int line_number = line->mete_data.line_counter;
     int num_of_operands = atoi(instructions_commands_and_addressing[command][3]);
@@ -443,22 +481,22 @@ bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList
 
     switch (num_of_operands) {
         case 0:
-            return insert_command(line, object_file, command, instuction_address, -1, -1);
+            return insert_command(line, object_file, command, address, -1, -1);
             break;
         case 1:
-            success = insert_command(line, object_file, command, instuction_address, -1, dest_addressing);
-            instuction_address ++;
-            success &=insert_src_or_dest_addressing(dest, object_file, line_number, instuction_address, DESTINATION, data_address);
+            success = insert_command(line, object_file, command, address, -1, dest_addressing);
+            address ++;
+            success &=insert_src_or_dest_addressing(dest, object_file, line_number, address, DESTINATION);
             break;
         case 2:
-            success = insert_command(line, object_file, command, instuction_address, src_addressing, dest_addressing);
-            instuction_address ++;
+            success = insert_command(line, object_file, command, address, src_addressing, dest_addressing);
+            address ++;
             if(are_both_register_addressing_modes(src_addressing, dest_addressing))
-                success &= insert_two_registers(source, dest, object_file, instuction_address, line_number);
+                success &= insert_two_registers(source, dest, object_file, address, line_number);
             else {
-                success &= insert_src_or_dest_addressing(source, object_file, line_number, instuction_address, SOURCE, data_address);;
-                instuction_address ++;
-                success &= insert_src_or_dest_addressing(dest, object_file, line_number, instuction_address, DESTINATION, data_address);;
+                success &= insert_src_or_dest_addressing(source, object_file, line_number, address, SOURCE);;
+                address ++;
+                success &= insert_src_or_dest_addressing(dest, object_file, line_number, address, DESTINATION);;
             }
             break;
         default:
@@ -469,14 +507,14 @@ bool parse_instruction_line_to_object_file_pattern(ParsedLine *line, DynamicList
 }
 
 /* convert given parsed line object into an object line */
-bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line, int data_section_begin_address) {
-
+bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line) {
+    update_line_counter(line);
     switch (line->line_type) {
         /* no need to check for ERROR_LINE, because the program will check for them before*/
         case DIRECTIVE_LINE:
-            return parse_directive_line_to_object_file_pattern(line, object_file, data_section_begin_address);
+            return parse_directive_line_to_object_file_pattern(line, object_file);
         case COMMAND_LINE:
-            return parse_instruction_line_to_object_file_pattern(line, object_file, data_section_begin_address);
+            return parse_instruction_line_to_object_file_pattern(line, object_file);
         case EMPTY_OR_COMMENT_LINE:
             return true;
         default:
@@ -485,18 +523,18 @@ bool convert_line_to_object_line(DynamicList *object_file, ParsedLine *line, int
     return true;
 }
 
-/* take the parsed lines and convert them to binary */
-bool convert_parsed_lines_to_binary(DynamicList parsed_lines_list, DynamicList* object_file, int data_section_begin_address) {
+/* take the parsed lines and convert lines of the object file */
+bool convert_parsed_lines_to_lines_of_output_octal_file(DynamicList parsed_lines_list, DynamicList* object_file) {
     int i;
     bool success = true;
     for (i = 0; i < parsed_lines_list.list_length; i++) {
         ParsedLine *line = (ParsedLine*)parsed_lines_list.items[i];
-        success &= convert_line_to_object_line(object_file, line, data_section_begin_address);
+        success &= convert_line_to_object_line(object_file, line);
     }
     return success;
 }
 
-/* are there any errors found in the assembly inpout file */
+/* are there any errors found in the assembly input file */
 bool found_errors_in_the_assembly_input_file(DynamicList errors_ptrs) {
     /*checks for error lines. if there are error lines,
      * the lines will be printed.
@@ -536,6 +574,7 @@ SecondPassOutput initialize_second_pass_output(FirstPassOutput first_pass_output
 SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     bool result = true;
     SecondPassOutput second_pass_output = initialize_second_pass_output(first_pass_output);
+    data_section_begin_address = first_pass_output.data_section_begin_address;
     if(found_errors_in_the_assembly_input_file(first_pass_output.errors_ptrs)) {
         result = false;
     }
@@ -545,10 +584,10 @@ SecondPassOutput second_pass(FirstPassOutput first_pass_output){
     else if(!update_direct_addressing_from_symbols_table_or_print_errors(first_pass_output.symbols_table, first_pass_output.external_ptrs, first_pass_output.direct_labels_ptrs, &second_pass_output.extern_file_data)){
         result = false;
     }
-    else if(!parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table, first_pass_output.data_section_begin_address)){
+    else if(!parse_the_entry_table_to_output_file(first_pass_output.entry_ptrs, &second_pass_output.entry_file_data, first_pass_output.symbols_table)){
         result = false;
     }
-    else if(!convert_parsed_lines_to_binary(first_pass_output.parsed_lines_list, &second_pass_output.object_file, first_pass_output.data_section_begin_address)) {
+    else if(!convert_parsed_lines_to_lines_of_output_octal_file(first_pass_output.parsed_lines_list, &second_pass_output.object_file)) {
         result = false;
     }
 
